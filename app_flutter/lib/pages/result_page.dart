@@ -36,14 +36,14 @@ class _ResultPageState extends State<ResultPage> {
     if (engine == 'local_cartoon_tflite') {
       return '本地卡通模型识别';
     }
-    if (engine == 'local_totem_match') {
-      return '本地图腾图库匹配';
-    }
     if (engine == 'local_costume_asset_match') {
       return '本地书册服饰图库匹配';
     }
     if (engine == 'local_title_ocr_match') {
       return '标题文字识别匹配';
+    }
+    if (engine == 'local_filename_match') {
+      return '图片文件名匹配';
     }
     return '图像识别模型匹配';
   }
@@ -64,10 +64,8 @@ class _ResultPageState extends State<ResultPage> {
     final bestResult =
         highConfidenceResults.isEmpty ? null : highConfidenceResults.first;
 
-    final notice = (widget.result['notice'] ??
-            '本结果仅基于图片中的服饰、头饰、纹样、建筑、器物等可见文化元素，'
-                '不代表对人物民族身份的判断。')
-        .toString();
+    final notice =
+        (widget.result['notice'] ?? '本结果仅识别民族服饰卡通图片，不代表对真人民族身份的判断。').toString();
     final warning = (widget.result['warning'] ?? '').toString();
     final chatContext = Map<String, dynamic>.from(widget.result);
     if (bestResult != null) {
@@ -141,7 +139,7 @@ class _ResultPageState extends State<ResultPage> {
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Text(
                     allResults.isEmpty
-                        ? '暂未识别到明显的民族文化元素。'
+                        ? '暂未识别到支持的民族服饰卡通图片。'
                         : '识别结果置信度不足，暂不展示具体民族文化结果。建议重新拍摄，尽量保持图片清晰、完整、光线充足。',
                   ),
                 )

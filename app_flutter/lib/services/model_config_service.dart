@@ -14,9 +14,9 @@ class ModelRuntimeConfig {
     'QWEN_CHAT_MODEL',
     defaultValue: 'qwen-turbo',
   );
-  static const String packagedQwenAsrModel = String.fromEnvironment(
-    'QWEN_ASR_MODEL',
-    defaultValue: 'qwen3-asr-flash',
+  static const String packagedAsrServerUrl = String.fromEnvironment(
+    'ASR_SERVER_URL',
+    defaultValue: 'https://artificialguybr-fish-s2-pro-zero.hf.space',
   );
   static const String packagedQwenTtsModel = String.fromEnvironment(
     'QWEN_TTS_MODEL',
@@ -29,22 +29,20 @@ class ModelRuntimeConfig {
 
   final String qwenBaseUrl;
   final String qwenApiKey;
-  final String qwenAsrApiKey;
+  final String asrServerUrl;
   final String qwenTtsUrl;
   final String qwenTtsApiKey;
   final String qwenChatModel;
-  final String qwenAsrModel;
   final String qwenTtsModel;
   final String qwenTtsVoice;
 
   const ModelRuntimeConfig({
     required this.qwenBaseUrl,
     required this.qwenApiKey,
-    required this.qwenAsrApiKey,
+    required this.asrServerUrl,
     required this.qwenTtsUrl,
     required this.qwenTtsApiKey,
     required this.qwenChatModel,
-    required this.qwenAsrModel,
     required this.qwenTtsModel,
     required this.qwenTtsVoice,
   });
@@ -55,11 +53,10 @@ class ModelRuntimeConfig {
       // API keys are deliberately never accepted from dart-define. Users must
       // enter them after installation in the hidden local configuration page.
       qwenApiKey: '',
-      qwenAsrApiKey: '',
+      asrServerUrl: packagedAsrServerUrl,
       qwenTtsUrl: packagedQwenTtsUrl,
       qwenTtsApiKey: '',
       qwenChatModel: packagedQwenChatModel,
-      qwenAsrModel: packagedQwenAsrModel,
       qwenTtsModel: packagedQwenTtsModel,
       qwenTtsVoice: packagedQwenTtsVoice,
     );
@@ -74,11 +71,12 @@ class ModelRuntimeConfig {
 class ModelConfigService {
   static const _qwenBaseUrl = 'model_config.qwen_base_url';
   static const _qwenApiKey = 'model_config.qwen_api_key';
-  static const _qwenAsrApiKey = 'model_config.qwen_asr_api_key';
+  static const _asrServerUrl = 'model_config.asr_server_url';
+  static const _legacyQwenAsrApiKey = 'model_config.qwen_asr_api_key';
   static const _qwenTtsUrl = 'model_config.qwen_tts_url';
   static const _qwenTtsApiKey = 'model_config.qwen_tts_api_key';
   static const _qwenChatModel = 'model_config.qwen_chat_model';
-  static const _qwenAsrModel = 'model_config.qwen_asr_model';
+  static const _legacyQwenAsrModel = 'model_config.qwen_asr_model';
   static const _qwenTtsModel = 'model_config.qwen_tts_model';
   static const _qwenTtsVoice = 'model_config.qwen_tts_voice';
 
@@ -96,13 +94,11 @@ class ModelConfigService {
     return ModelRuntimeConfig(
       qwenBaseUrl: read(_qwenBaseUrl, defaults.qwenBaseUrl),
       qwenApiKey: read(_qwenApiKey, defaults.qwenApiKey, allowEmpty: true),
-      qwenAsrApiKey:
-          read(_qwenAsrApiKey, defaults.qwenAsrApiKey, allowEmpty: true),
+      asrServerUrl: read(_asrServerUrl, defaults.asrServerUrl),
       qwenTtsUrl: read(_qwenTtsUrl, defaults.qwenTtsUrl),
       qwenTtsApiKey:
           read(_qwenTtsApiKey, defaults.qwenTtsApiKey, allowEmpty: true),
       qwenChatModel: read(_qwenChatModel, defaults.qwenChatModel),
-      qwenAsrModel: read(_qwenAsrModel, defaults.qwenAsrModel),
       qwenTtsModel: read(_qwenTtsModel, defaults.qwenTtsModel),
       qwenTtsVoice: read(_qwenTtsVoice, defaults.qwenTtsVoice),
     );
@@ -113,11 +109,12 @@ class ModelConfigService {
     await Future.wait([
       prefs.setString(_qwenBaseUrl, config.qwenBaseUrl.trim()),
       prefs.setString(_qwenApiKey, config.qwenApiKey.trim()),
-      prefs.setString(_qwenAsrApiKey, config.qwenAsrApiKey.trim()),
+      prefs.setString(_asrServerUrl, config.asrServerUrl.trim()),
       prefs.setString(_qwenTtsUrl, config.qwenTtsUrl.trim()),
       prefs.setString(_qwenTtsApiKey, config.qwenTtsApiKey.trim()),
       prefs.setString(_qwenChatModel, config.qwenChatModel.trim()),
-      prefs.setString(_qwenAsrModel, config.qwenAsrModel.trim()),
+      prefs.remove(_legacyQwenAsrApiKey),
+      prefs.remove(_legacyQwenAsrModel),
       prefs.setString(_qwenTtsModel, config.qwenTtsModel.trim()),
       prefs.setString(_qwenTtsVoice, config.qwenTtsVoice.trim()),
     ]);
@@ -128,11 +125,12 @@ class ModelConfigService {
     await Future.wait([
       prefs.remove(_qwenBaseUrl),
       prefs.remove(_qwenApiKey),
-      prefs.remove(_qwenAsrApiKey),
+      prefs.remove(_asrServerUrl),
+      prefs.remove(_legacyQwenAsrApiKey),
       prefs.remove(_qwenTtsUrl),
       prefs.remove(_qwenTtsApiKey),
       prefs.remove(_qwenChatModel),
-      prefs.remove(_qwenAsrModel),
+      prefs.remove(_legacyQwenAsrModel),
       prefs.remove(_qwenTtsModel),
       prefs.remove(_qwenTtsVoice),
     ]);

@@ -1,8 +1,8 @@
 param(
     [string]$QwenBaseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
     [string]$QwenTtsUrl = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+    [string]$AsrServerUrl = "https://artificialguybr-fish-s2-pro-zero.hf.space",
     [string]$ChatModel = "qwen-turbo",
-    [string]$AsrModel = "qwen3-asr-flash",
     [string]$TtsModel = "qwen3-tts-flash",
     [string]$TtsVoice = "Cherry",
     [ValidateSet("apk", "appbundle")]
@@ -26,8 +26,8 @@ try {
         "--$Mode",
         "--dart-define=QWEN_BASE_URL=$QwenBaseUrl",
         "--dart-define=QWEN_TTS_URL=$QwenTtsUrl",
+        "--dart-define=ASR_SERVER_URL=$AsrServerUrl",
         "--dart-define=QWEN_CHAT_MODEL=$ChatModel",
-        "--dart-define=QWEN_ASR_MODEL=$AsrModel",
         "--dart-define=QWEN_TTS_MODEL=$TtsModel",
         "--dart-define=QWEN_TTS_VOICE=$TtsVoice"
     )

@@ -12,11 +12,10 @@ class ModelConfigPage extends StatefulWidget {
 class _ModelConfigPageState extends State<ModelConfigPage> {
   final _qwenBaseUrlController = TextEditingController();
   final _qwenApiKeyController = TextEditingController();
-  final _qwenAsrApiKeyController = TextEditingController();
+  final _asrServerUrlController = TextEditingController();
   final _qwenTtsUrlController = TextEditingController();
   final _qwenTtsApiKeyController = TextEditingController();
   final _qwenChatModelController = TextEditingController();
-  final _qwenAsrModelController = TextEditingController();
   final _qwenTtsModelController = TextEditingController();
   final _qwenTtsVoiceController = TextEditingController();
 
@@ -34,11 +33,10 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
   void dispose() {
     _qwenBaseUrlController.dispose();
     _qwenApiKeyController.dispose();
-    _qwenAsrApiKeyController.dispose();
+    _asrServerUrlController.dispose();
     _qwenTtsUrlController.dispose();
     _qwenTtsApiKeyController.dispose();
     _qwenChatModelController.dispose();
-    _qwenAsrModelController.dispose();
     _qwenTtsModelController.dispose();
     _qwenTtsVoiceController.dispose();
     super.dispose();
@@ -56,11 +54,10 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
   void _apply(ModelRuntimeConfig config) {
     _qwenBaseUrlController.text = config.qwenBaseUrl;
     _qwenApiKeyController.text = config.qwenApiKey;
-    _qwenAsrApiKeyController.text = config.qwenAsrApiKey;
+    _asrServerUrlController.text = config.asrServerUrl;
     _qwenTtsUrlController.text = config.qwenTtsUrl;
     _qwenTtsApiKeyController.text = config.qwenTtsApiKey;
     _qwenChatModelController.text = config.qwenChatModel;
-    _qwenAsrModelController.text = config.qwenAsrModel;
     _qwenTtsModelController.text = config.qwenTtsModel;
     _qwenTtsVoiceController.text = config.qwenTtsVoice;
   }
@@ -69,11 +66,10 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
     return ModelRuntimeConfig(
       qwenBaseUrl: _qwenBaseUrlController.text,
       qwenApiKey: _qwenApiKeyController.text,
-      qwenAsrApiKey: _qwenAsrApiKeyController.text,
+      asrServerUrl: _asrServerUrlController.text,
       qwenTtsUrl: _qwenTtsUrlController.text,
       qwenTtsApiKey: _qwenTtsApiKeyController.text,
       qwenChatModel: _qwenChatModelController.text,
-      qwenAsrModel: _qwenAsrModelController.text,
       qwenTtsModel: _qwenTtsModelController.text,
       qwenTtsVoice: _qwenTtsVoiceController.text,
     );
@@ -132,7 +128,7 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('模型接口配置')),
+      appBar: AppBar(title: const Text('模型与语音服务配置')),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -144,9 +140,9 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
                     children: [
                       const ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text('千问模型接口'),
+                        title: Text('聊天、语音识别与朗读服务'),
                         subtitle: Text(
-                          '图片固定使用本地OCR和TFLite，低于70%时提示重新拍摄。系统朗读不可用时使用联网TTS。各专项密钥留空时使用聊天密钥。',
+                          '图片固定使用本地文件名、参考图库、中文OCR和TFLite。语音转文字使用Fish S2 Pro Zero服务器，无需千问ASR密钥；系统朗读不可用时使用联网TTS。',
                         ),
                       ),
                       SwitchListTile.adaptive(
@@ -171,9 +167,11 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
                         obscureText: !_showKeys,
                       ),
                       _Field(
-                        controller: _qwenAsrApiKeyController,
-                        label: '语音识别接口密钥（可选，留空则使用聊天密钥）',
-                        obscureText: !_showKeys,
+                        controller: _asrServerUrlController,
+                        label: '语音识别服务器地址',
+                        hint:
+                            'https://artificialguybr-fish-s2-pro-zero.hf.space',
+                        keyboardType: TextInputType.url,
                       ),
                       _Field(
                         controller: _qwenTtsApiKeyController,
@@ -184,11 +182,6 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
                         controller: _qwenChatModelController,
                         label: '聊天模型',
                         hint: 'qwen-turbo',
-                      ),
-                      _Field(
-                        controller: _qwenAsrModelController,
-                        label: '语音识别模型',
-                        hint: 'qwen3-asr-flash',
                       ),
                       _Field(
                         controller: _qwenTtsUrlController,

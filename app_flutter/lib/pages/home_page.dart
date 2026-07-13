@@ -181,7 +181,7 @@ class _HomePageState extends State<HomePage> {
                     _ActionTile(
                       icon: Icons.photo_camera_outlined,
                       title: cameraLabel,
-                      subtitle: '现场拍摄服饰、纹样',
+                      subtitle: '现场拍摄民族服饰卡通人物',
                       color: const Color(0xFFB84A39),
                       onTap: _loading
                           ? null
@@ -191,7 +191,7 @@ class _HomePageState extends State<HomePage> {
                     _ActionTile(
                       icon: Icons.photo_library_outlined,
                       title: '上传图片识别',
-                      subtitle: '从相册选择图片，生成文化卡片',
+                      subtitle: '从相册选择民族服饰卡通图片',
                       color: const Color(0xFF2F6F73),
                       onTap: _loading
                           ? null
@@ -238,7 +238,7 @@ class _HomePageState extends State<HomePage> {
                           const CircularProgressIndicator(),
                           const SizedBox(height: 14),
                           Text(
-                            '本地模型正在识别卡通图片',
+                            '本地模型正在识别民族服饰卡通图片',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 6),
@@ -318,7 +318,7 @@ class _HeroPanel extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            '看见一个文化元素，听懂它背后的故事',
+            '识别民族服饰卡通图片，听懂背后的文化故事',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                   height: 1.18,
@@ -326,7 +326,7 @@ class _HeroPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '请使用卡通风格的服饰图片。识别后会给出相应的文化元素介绍。',
+            '仅支持民族服饰卡通人物图片，不识别图腾、纹样、建筑、器物或真人照片。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.black.withAlpha(173),
                   height: 1.5,
@@ -427,7 +427,7 @@ class _SafetyPanel extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '本应用只介绍图片中可见的文化元素，不根据人物外貌判断民族身份。识别结果仅供文化学习参考。',
+              '本应用只识别民族服饰卡通图片，不根据真人外貌判断民族身份。识别结果仅供文化学习参考。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.black.withAlpha(173),
                     height: 1.45,

@@ -4,12 +4,13 @@ This project is now a Flutter app with local TFLite image recognition.
 
 Current behavior:
 
-- Recognizes cartoon-style cultural element images only.
+- Recognizes ethnic-costume cartoon character images only; rejects totems, standalone patterns, buildings, artifacts, and real-person photos.
 - Uses `app_flutter/assets/model/ethnic_model.tflite`.
 - Uses `app_flutter/assets/model/labels.txt` for the 56 output classes.
 - Uses local OCR/TFLite only; results below 70% show a retry prompt.
 - Does not use a FastAPI backend.
-- Chat, ASR, and online TTS fallback use configured Qwen APIs.
+- Chat and online TTS fallback use configured Qwen APIs.
+- Speech-to-text uploads recordings to the public Fish S2 Pro Zero Gradio Space.
 - The hidden config page is still available from the home header with 5 taps and password `123456`.
 
 Model details:
@@ -40,7 +41,7 @@ Optional dart defines for packaged defaults:
 flutter build apk --release ^
   --dart-define=QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1 ^
   --dart-define=QWEN_CHAT_MODEL=qwen-turbo ^
-  --dart-define=QWEN_ASR_MODEL=qwen3-asr-flash ^
+  --dart-define=ASR_SERVER_URL=https://artificialguybr-fish-s2-pro-zero.hf.space ^
   --dart-define=QWEN_TTS_MODEL=qwen3-tts-flash ^
   --dart-define=QWEN_TTS_VOICE=Cherry
 ```

@@ -328,7 +328,7 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _speechStatus = '回答失败，请检查网络后重试';
         final errorText =
-            '暂时无法回答：$e\n\n请检查网络、接口密钥、接口地址、聊天模型和语音识别模型配置。图片识别仍使用本地 TFLite，不需要视觉模型接口。';
+            '暂时无法回答：$e\n\n请检查网络、聊天接口密钥、聊天模型和语音识别服务器地址。图片识别使用本地参考图库、OCR和TFLite，不需要视觉模型接口。';
         if (pendingIndex < _messages.length) {
           _messages[pendingIndex] =
               ChatMessage(role: 'assistant', text: errorText);
