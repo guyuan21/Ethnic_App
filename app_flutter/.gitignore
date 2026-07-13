@@ -1,0 +1,25 @@
+# Flutter / Dart
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+ios/Pods/
+android/.gradle/
+android/local.properties
+**/GeneratedPluginRegistrant.*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 平台原生
+*.jks
+**/key.properties
+
+# 系统文件
+.DS_Store
+Thumbs.db

@@ -1,0 +1,722 @@
+[
+  {
+    "label": "hanzu",
+    "english": "Han",
+    "book_page": 1,
+    "asset": "assets/costumes/hanzu.jpg",
+    "visual_features": [
+      "男性长衫立领黑袍配白袖口",
+      "女性高领旗袍裙开衩至膝",
+      "深蓝底白星纹长裙",
+      "米黄与深蓝拼接针织马甲",
+      "彩色渐变折扇手持",
+      "黑色圆框眼镜佩戴",
+      "传统布鞋平底无跟",
+      "衣襟盘扣设计可见"
+    ]
+  },
+  {
+    "label": "huizu",
+    "english": "Hui",
+    "book_page": 3,
+    "asset": "assets/costumes/huizu.jpg",
+    "visual_features": [
+      "常见白帽",
+      "清真饮食器物和店铺标识具有辨识度",
+      "建筑装饰多见几何纹和花草纹"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "keerkezizu",
+    "english": "Kirgiz",
+    "book_page": 5,
+    "asset": "assets/costumes/keerkezizu.jpg",
+    "visual_features": [
+      "红为主色调",
+      "辅以金线与彩色丝线。"
+    ]
+  },
+  {
+    "label": "tajikezu",
+    "english": "Tajik",
+    "book_page": 7,
+    "asset": "assets/costumes/tajikezu.jpg",
+    "visual_features": [
+      "男性头戴黑底红纹便帽；长袍蓝底饰黑纹"
+    ]
+  },
+  {
+    "label": "wuzibiekezu",
+    "english": "Ozbek",
+    "book_page": 9,
+    "asset": "assets/costumes/wuzibiekezu.jpg",
+    "visual_features": [
+      "男性头戴彩纹小帽；条纹长袍外搭"
+    ]
+  },
+  {
+    "label": "eluosizu",
+    "english": "Russian",
+    "book_page": 11,
+    "asset": "assets/costumes/eluosizu.jpg",
+    "visual_features": [
+      "女性头戴彩色刺绣头巾",
+      "男性立领长袖上衣",
+      "黑白主色调搭配彩色刺绣",
+      "袖口与前襟有几何图案刺绣",
+      "胸前及肩部饰红色花卉纹样",
+      "腰间系宽布带束腰",
+      "女性着黑色长裙配白色镶边",
+      "男性穿黑色灯笼裤配高筒靴"
+    ]
+  },
+  {
+    "label": "hasakezu",
+    "english": "Kazak",
+    "book_page": 13,
+    "asset": "assets/costumes/hasakezu.jpg",
+    "visual_features": [
+      "服饰多见皮毛边饰和刺绣纹样",
+      "毡房",
+      "色彩明快"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "weiwuerzu",
+    "english": "Uyghur",
+    "book_page": 15,
+    "asset": "assets/costumes/weiwuerzu.jpg",
+    "visual_features": [
+      "花帽",
+      "色彩明快",
+      "乐器"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "tataerzu",
+    "english": "Tatar",
+    "book_page": 17,
+    "asset": "assets/costumes/tataerzu.jpg",
+    "visual_features": [
+      "白",
+      "黑为主色调；服饰强调对称性与装饰性。"
+    ]
+  },
+  {
+    "label": "salazu",
+    "english": "Salar",
+    "book_page": 19,
+    "asset": "assets/costumes/salazu.jpg",
+    "visual_features": [
+      "白",
+      "橙",
+      "绿为主色调。"
+    ]
+  },
+  {
+    "label": "tuzu",
+    "english": "Tu",
+    "book_page": 21,
+    "asset": "assets/costumes/tuzu.jpg",
+    "visual_features": [
+      "男性戴灰黑相间平顶帽；女性戴高耸红底彩饰头冠；男装为黑色长袍"
+    ]
+  },
+  {
+    "label": "yuguzu",
+    "english": "Yugur",
+    "book_page": 23,
+    "asset": "assets/costumes/yuguzu.jpg",
+    "visual_features": [
+      "白色圆顶帽配蓝边",
+      "立领长袍白底蓝袖",
+      "绿色宽腰带束身",
+      "粉色底星形印花裙",
+      "红色镶边对襟短褂",
+      "胸前缀多块方形刺绣",
+      "颈戴多层彩色串珠项饰",
+      "红靴配绿边裙摆"
+    ]
+  },
+  {
+    "label": "dongxiangzu",
+    "english": "Dongxiang",
+    "book_page": 25,
+    "asset": "assets/costumes/dongxiangzu.jpg",
+    "visual_features": [
+      "红",
+      "白为主色调。"
+    ]
+  },
+  {
+    "label": "baoanzu",
+    "english": "Bonan",
+    "book_page": 27,
+    "asset": "assets/costumes/baoanzu.jpg",
+    "visual_features": [
+      "男式毛皮帽，棕黄毛边",
+      "女式红绿相间花饰头巾",
+      "黑色立领长袖上衣配红色腰带",
+      "红色长袖外搭黑色对襟马甲",
+      "马甲前襟蓝色盘扣装饰",
+      "黑色宽腿裤配红色平底鞋",
+      "男子黑裙短于膝，内衬浅色裤",
+      "腰间系红色布带打结垂坠"
+    ]
+  },
+  {
+    "label": "zangzu",
+    "english": "Tibetan",
+    "book_page": 29,
+    "asset": "assets/costumes/zangzu.jpg",
+    "visual_features": [
+      "男性黑袍配白毛领",
+      "女性高耸黑帽饰红珠",
+      "男式腰系红带佩长刀",
+      "女式颈戴多层彩珠项链",
+      "裙摆条纹横彩相间",
+      "男袍下摆镶白毛边",
+      "女裙上部橙色短袖",
+      "银质刀鞘坠饰垂挂"
+    ]
+  },
+  {
+    "label": "luobazu",
+    "english": "Lhoba",
+    "book_page": 31,
+    "asset": "assets/costumes/luobazu.jpg",
+    "visual_features": [
+      "头戴毛皮帽饰"
+    ]
+  },
+  {
+    "label": "menbazu",
+    "english": "Moinba",
+    "book_page": 33,
+    "asset": "assets/costumes/menbazu.jpg",
+    "visual_features": [
+      "红",
+      "蓝为主色调。"
+    ]
+  },
+  {
+    "label": "qiangzu",
+    "english": "Qiang",
+    "book_page": 35,
+    "asset": "assets/costumes/qiangzu.jpg",
+    "visual_features": [
+      "蓝色圆顶帽配彩色织锦装饰",
+      "米色长袍外搭棕色毛边马甲",
+      "深蓝长裙配彩色条纹袖口",
+      "马甲领口与袖口饰有白色毛边",
+      "腰间系红色宽腰带",
+      "黑色长袜配黑色平底鞋",
+      "彩色刺绣布鞋鞋面有几何纹样",
+      "耳垂佩戴银质环形耳坠"
+    ]
+  },
+  {
+    "label": "yizu",
+    "english": "Yi",
+    "book_page": 37,
+    "asset": "assets/costumes/yizu.jpg",
+    "visual_features": [
+      "男性尖顶黑帽配长流苏",
+      "女性彩绣头帕配垂珠耳饰",
+      "黑色立领长袖上衣配彩色镶边",
+      "袖口多层彩条拼接装饰",
+      "腰间红色围裙式短围腰",
+      "百褶长裙分层色块：黑-红-白-蓝-黑",
+      "裙摆边缘白色蕾丝滚边",
+      "胸前斜襟盘扣与彩色几何纹绣"
+    ]
+  },
+  {
+    "label": "daizu",
+    "english": "Dai",
+    "book_page": 39,
+    "asset": "assets/costumes/daizu.jpg",
+    "visual_features": [
+      "男性头戴黑底彩边包头巾",
+      "前襟竖排彩色盘扣；女上衣为灰黑拼色短款",
+      "领口锯齿形；男女服饰均以红",
+      "黄",
+      "蓝",
+      "垂流苏；女颈戴多层银质项圈",
+      "手戴宽窄不一银镯；女"
+    ]
+  },
+  {
+    "label": "achangzu",
+    "english": "Achang",
+    "book_page": 41,
+    "asset": "assets/costumes/achangzu.jpg",
+    "visual_features": [
+      "户撒刀工艺具有代表性",
+      "服饰常见织纹",
+      "山地农耕器物和节庆歌舞常见"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "jingpozu",
+    "english": "Jingpo",
+    "book_page": 43,
+    "asset": "assets/costumes/jingpozu.jpg",
+    "visual_features": [
+      "男性头戴孔雀羽饰高冠",
+      "红色长袍绣金龙纹",
+      "袍身有几何回纹装饰",
+      "女性戴红底彩纹帽",
+      "颈戴多层银圆片项圈",
+      "肩披银流苏披肩",
+      "腰系宽红腰带",
+      "裙装为红底多色竖条纹"
+    ]
+  },
+  {
+    "label": "deangzu",
+    "english": "Deang",
+    "book_page": 45,
+    "asset": "assets/costumes/deangzu.jpg",
+    "visual_features": [
+      "黑色头饰缀彩色绒球与花饰",
+      "宽袖黑上衣配蓝色腰带",
+      "颈戴多层彩色珠串项链",
+      "长发配彩珠额饰与耳环",
+      "红黑相间横条纹长裙",
+      "胸前银片装饰配流苏",
+      "腰系彩色宽腰带垂银链",
+      "手持饰彩穗长杆道具"
+    ]
+  },
+  {
+    "label": "nuzu",
+    "english": "Nu",
+    "book_page": 47,
+    "asset": "assets/costumes/nuzu.jpg",
+    "visual_features": [
+      "头戴彩纹圆顶帽",
+      "帽侧垂红缨；",
+      "上衣为立领对襟长袍",
+      "袖口镶黑边；",
+      "外搭深蓝格纹马甲",
+      "缀白色圆扣；",
+      "腰系宽幅彩条腰带",
+      "配流苏挂饰；"
+    ]
+  },
+  {
+    "label": "dulongzu",
+    "english": "Drung",
+    "book_page": 49,
+    "asset": "assets/costumes/dulongzu.jpg",
+    "visual_features": [
+      "黑发编辫垂肩",
+      "红绿拼色长袖",
+      "条纹围裙式外袍",
+      "白色绑腿缠绕小腿",
+      "颈戴多层银链项链",
+      "腰间悬棕褐色小竹篓",
+      "衣襟斜裁不对称",
+      "布料竖条纹为主"
+    ]
+  },
+  {
+    "label": "lisuzu",
+    "english": "Lisu",
+    "book_page": 51,
+    "asset": "assets/costumes/lisuzu.jpg",
+    "visual_features": [
+      "蓝色包头巾配红色流苏装饰",
+      "蓝色长袖上衣配白色立领",
+      "多层彩色腰带环绕腰部",
+      "橙红蓝三色条纹长裙",
+      "银质项圈与多层项链叠戴",
+      "头顶高耸花冠缀满珠饰与彩球",
+      "脚穿格纹绑腿配黑色布鞋",
+      "胸前斜挎黄底流苏小包"
+    ]
+  },
+  {
+    "label": "naxizu",
+    "english": "Naxi",
+    "book_page": 53,
+    "asset": "assets/costumes/naxizu.jpg",
+    "visual_features": [
+      "黄",
+      "蓝"
+    ]
+  },
+  {
+    "label": "pumizu",
+    "english": "Pumi",
+    "book_page": 55,
+    "asset": "assets/costumes/pumizu.jpg",
+    "visual_features": [
+      "男性戴白色软帽；女式头饰缀花与珠串；男上衣为对襟长袖"
+    ]
+  },
+  {
+    "label": "baizu",
+    "english": "Bai",
+    "book_page": 57,
+    "asset": "assets/costumes/baizu.jpg",
+    "visual_features": [
+      "男性头戴彩布尖顶帽",
+      "饰彩色绒球；女式头饰为高耸圆盘形",
+      "缀银饰与流苏；男装上衣立领对襟",
+      "蓝白条纹配黑背心；女装上衣红底白袖",
+      "袖口及下摆绣花；男女服饰均以金线勾边",
+      "袖口"
+    ]
+  },
+  {
+    "label": "wazu",
+    "english": "Va",
+    "book_page": 59,
+    "asset": "assets/costumes/wazu.jpg",
+    "visual_features": [
+      "红色缠头巾配金属饰扣",
+      "蓝色短袖对襟上衣配银链挂饰",
+      "黑色短裤配绑腿布条",
+      "红黄相间鸟形佩饰悬于腰侧",
+      "黑底红条纹宽筒裙",
+      "多层彩色珠串颈饰叠戴",
+      "白色束发带配流苏耳环",
+      "赤足配白布脚踝绑带"
+    ]
+  },
+  {
+    "label": "bulangzu",
+    "english": "Blang",
+    "book_page": 61,
+    "asset": "assets/costumes/bulangzu.jpg",
+    "visual_features": [
+      "茶叶种植与饮茶器物具有代表性",
+      "服饰多见深色底布和彩色装饰",
+      "竹楼"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "hanizu",
+    "english": "Hani",
+    "book_page": 63,
+    "asset": "assets/costumes/hanizu.jpg",
+    "visual_features": [
+      "深蓝色头巾包裹头部",
+      "上衣为立领短款外套",
+      "黑色长裤配宽腿剪裁",
+      "衣襟与袖口有彩色几何刺绣",
+      "胸前垂挂多串银饰流苏",
+      "腰间系彩色织带束腰",
+      "右侧女性戴尖顶白布帽",
+      "黑色短袖上衣配短裤"
+    ]
+  },
+  {
+    "label": "lahuzu",
+    "english": "Lahu",
+    "book_page": 65,
+    "asset": "assets/costumes/lahuzu.jpg",
+    "visual_features": [
+      "黑色高筒帽配流苏装饰",
+      "立领长袖黑色上衣",
+      "彩色条纹斜挎织锦围巾",
+      "袖口与领口几何刺绣图案",
+      "多色拼接方格纹长款外袍",
+      "红色头巾包裹发髻",
+      "银质耳坠垂挂于耳侧",
+      "腰间系宽边彩色织带"
+    ]
+  },
+  {
+    "label": "jinuozu",
+    "english": "Jino",
+    "book_page": 67,
+    "asset": "assets/costumes/jinuozu.jpg",
+    "visual_features": [
+      "红黄蓝绿紫交织。"
+    ]
+  },
+  {
+    "label": "mengguzu",
+    "english": "Mongol",
+    "book_page": 69,
+    "asset": "assets/costumes/mengguzu.jpg",
+    "visual_features": [
+      "蒙古袍",
+      "纹样常与草原",
+      "毡房"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "tujiazu",
+    "english": "Tujia",
+    "book_page": 71,
+    "asset": "assets/costumes/tujiazu.jpg",
+    "visual_features": [
+      "西兰卡普织锦纹样丰富",
+      "吊脚楼适应山地环境",
+      "摆手舞服饰和祭祀器物具有代表性"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "miaozu",
+    "english": "Miao",
+    "book_page": 73,
+    "asset": "assets/costumes/miaozu.jpg",
+    "visual_features": [
+      "男性头戴红布包头",
+      "袖口及下摆饰红底彩绣；裙身分上下两段",
+      "上部深蓝缀花",
+      "下部大红满绣花卉藤蔓；腰间系宽银带"
+    ]
+  },
+  {
+    "label": "dongzu",
+    "english": "Dong",
+    "book_page": 75,
+    "asset": "assets/costumes/dongzu.jpg",
+    "visual_features": [
+      "男子戴黑帽插羽毛",
+      "女子发髻盘顶饰银簪",
+      "男装黑袍立领长袖",
+      "女装黑底红中襟",
+      "银链斜挎胸前挂",
+      "腰系白布束腰带",
+      "裙摆多层黑褶皱",
+      "袖口蓝边绣花边"
+    ]
+  },
+  {
+    "label": "buyizu",
+    "english": "Buyi",
+    "book_page": 77,
+    "asset": "assets/costumes/buyizu.jpg",
+    "visual_features": [
+      "服饰多见蓝",
+      "蜡染和织锦纹样具有代表性",
+      "石板房"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "gelaozu",
+    "english": "Gelo",
+    "book_page": 79,
+    "asset": "assets/costumes/gelaozu.jpg",
+    "visual_features": [
+      "女为长裙配白袜黑鞋。"
+    ]
+  },
+  {
+    "label": "mulaozu",
+    "english": "Mulam",
+    "book_page": 81,
+    "asset": "assets/costumes/mulaozu.jpg",
+    "visual_features": [
+      "格纹头巾包裹头部",
+      "立领黑衣配米黄刺绣领",
+      "紫上衣斜襟设计",
+      "袖口与下摆彩线滚边",
+      "红白格纹腰带束腰",
+      "黑色长裙喇叭形下摆",
+      "紫色长裤侧开衩",
+      "红色布鞋配白色鞋面"
+    ]
+  },
+  {
+    "label": "shuizu",
+    "english": "Shui",
+    "book_page": 83,
+    "asset": "assets/costumes/shuizu.jpg",
+    "visual_features": [
+      "马尾绣工艺精细",
+      "水书文字和祭祀器物具有代表性",
+      "服饰常见蓝"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "manzu",
+    "english": "Manchu",
+    "book_page": 85,
+    "asset": "assets/costumes/manzu.jpg",
+    "visual_features": [
+      "旗装",
+      "纹样常见花卉",
+      "弓箭"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "dawoerzu",
+    "english": "Daur",
+    "book_page": 87,
+    "asset": "assets/costumes/dawoerzu.jpg",
+    "visual_features": [
+      "男戴蓝顶帽"
+    ]
+  },
+  {
+    "label": "ewenkezu",
+    "english": "Ewenki",
+    "book_page": 89,
+    "asset": "assets/costumes/ewenkezu.jpg",
+    "visual_features": [
+      "兽皮服饰适应寒冷森林环境",
+      "驯鹿",
+      "纹样多与动物和自然相关"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "elunchunzu",
+    "english": "Oroqen",
+    "book_page": 91,
+    "asset": "assets/costumes/elunchunzu.jpg",
+    "visual_features": [
+      "兽皮服饰和帽饰适应寒冷环境",
+      "桦皮船",
+      "图案多与森林动物和自然相关"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "hezhezu",
+    "english": "Hezhe",
+    "book_page": 93,
+    "asset": "assets/costumes/hezhezu.jpg",
+    "visual_features": [
+      "男式皮帽饰毛边",
+      "女式绒帽缀银饰",
+      "立领对襟长袍",
+      "棕褐主色调搭配黑边",
+      "衣襟盘扣呈S形纹样",
+      "袖口下摆绣卷草纹",
+      "裤脚与靴口镶白毛边",
+      "腰间无明显束带"
+    ]
+  },
+  {
+    "label": "chaoxianzu",
+    "english": "Korean",
+    "book_page": 95,
+    "asset": "assets/costumes/chaoxianzu.jpg",
+    "visual_features": [
+      "男子戴高筒黑帽；女子发髻配银簪；男服上衣白底黑背心；女服上衣红",
+      "下裙紫；腰系宽黑带结；裙摆垂坠长至脚踝；袖口宽大呈喇叭状；衣襟处有白色镶边绣花。"
+    ]
+  },
+  {
+    "label": "xibozu",
+    "english": "Xibe",
+    "book_page": 97,
+    "asset": "assets/costumes/xibozu.jpg",
+    "visual_features": [
+      "服饰受北方骑射文化影响",
+      "弓箭",
+      "节庆饮食和家族礼俗特色鲜明"
+    ],
+    "visual_features_source": "culture_info_fallback"
+  },
+  {
+    "label": "zhuangzu",
+    "english": "Zhuang",
+    "book_page": 99,
+    "asset": "assets/costumes/zhuangzu.jpg",
+    "visual_features": [
+      "男子立领盘扣白上衣",
+      "女子头戴绣花包头巾",
+      "红腰带束宽裤腰身",
+      "深蓝阔腿裤配黑布鞋",
+      "女子黄底绣花短袖上衣",
+      "酒红长裙饰蓝黄几何纹",
+      "肩挎彩绣流苏小包袋",
+      "手持红穗铜铃挂饰物"
+    ]
+  },
+  {
+    "label": "yaozu",
+    "english": "Yao",
+    "book_page": 101,
+    "asset": "assets/costumes/yaozu.jpg",
+    "visual_features": [
+      "男性戴深蓝圆顶帽"
+    ]
+  },
+  {
+    "label": "maonanzu",
+    "english": "Maonan",
+    "book_page": 103,
+    "asset": "assets/costumes/maonanzu.jpg",
+    "visual_features": [
+      "男性立领对襟上衣配红色腰带",
+      "女性高领盘扣上衣配黑色围裙",
+      "宽边竹编斗笠戴于头顶",
+      "男装深蓝长裤配布鞋",
+      "女装浅蓝长裤裤脚收束",
+      "黑色围裙边缘饰金色纹样",
+      "上衣袖口与下摆有蓝白滚边",
+      "腰间系红布带作装饰性束腰"
+    ]
+  },
+  {
+    "label": "jingzu",
+    "english": "Jing",
+    "book_page": 105,
+    "asset": "assets/costumes/jingzu.jpg",
+    "visual_features": [
+      "帽檐垂两根细绳；外披浅粉底红花长款开衫；鞋履为黑色平底布鞋。"
+    ]
+  },
+  {
+    "label": "lizu",
+    "english": "Li",
+    "book_page": 107,
+    "asset": "assets/costumes/lizu.jpg",
+    "visual_features": [
+      "红色圆顶帽配红发带",
+      "米黄交领短袍配白色围裙",
+      "黑色高耸方顶帽饰红黑纹样",
+      "黑色长袖上衣配红色几何纹连衣裙",
+      "颈戴多层银项圈",
+      "胸前银饰圆形凸起带纹路",
+      "腰间无明显腰带",
+      "裙身布满三角菱形连续图案"
+    ]
+  },
+  {
+    "label": "shezu",
+    "english": "She",
+    "book_page": 109,
+    "asset": "assets/costumes/shezu.jpg",
+    "visual_features": [
+      "男性立领蓝黑拼色上衣配红绳盘扣",
+      "女性高耸红色螺旋形头饰带长缨",
+      "黑色长袖外搭彩色斜襟短衫",
+      "红白黑三色几何纹样满幅刺绣",
+      "胸前佩戴圆形银质胸针",
+      "腰间系宽版蓝色织锦腰带",
+      "下身深蓝喇叭裤配红边滚边",
+      "衣摆及袖口多层彩色条纹镶边"
+    ]
+  },
+  {
+    "label": "gaoshanzu",
+    "english": "Gaoshan",
+    "book_page": 111,
+    "asset": "assets/costumes/gaoshanzu.jpg",
+    "visual_features": [
+      "红为主色调",
+      "辅以金黄几何纹样。"
+    ]
+  }
+]

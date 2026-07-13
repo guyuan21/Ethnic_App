@@ -1,0 +1,40 @@
+# Secrets and local env
+.env
+*.env
+backend/.env
+**/.env
+*.csv
+*apiKey*
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+key.properties
+
+# Python runtime files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Backend local runtime data
+/backend/uploads/
+/uploads/
+/model/
+/tmp/
+
+# Flutter and Android build outputs
+app_flutter/build/
+app_flutter/.dart_tool/
+app_flutter/.flutter-plugins
+app_flutter/.flutter-plugins-dependencies
+app_flutter/build_logs/
+app_flutter/android/.gradle/
+app_flutter/android/local.properties
+*.apk
+*.aab
+
+# Editor/system noise
+.vscode/
+Typora_Hook_Log.txt
+*.log

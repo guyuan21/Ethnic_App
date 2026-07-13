@@ -1,0 +1,63 @@
+# 文化元素识别标签
+#
+# 重要原则：
+# 这些标签只用于识别服饰、头饰、纹样、建筑、器物等文化元素，
+# 不用于、也不能用于判断人物民族身份。
+#
+# 后期训练 YOLO / CLIP 模型时，按此文件中的 label 顺序对应类别。
+achangzu
+baizu
+baoanzu
+bulangzu
+buyizu
+chaoxianzu
+daizu
+dawoerzu
+deangzu
+dongxiangzu
+dongzu
+dulongzu
+elunchunzu
+eluosizu
+ewenkezu
+gaoshanzu
+gelaozu
+hanizu
+hanzu
+hasakezu
+hezhezu
+huizu
+jingpozu
+jingzu
+jinuozu
+keerkezizu
+lahuzu
+lisuzu
+lizu
+luobazu
+manzu
+maonanzu
+menbazu
+mengguzu
+miaozu
+mulaozu
+naxizu
+nuzu
+pumizu
+qiangzu
+salazu
+shezu
+shuizu
+tajikezu
+tataerzu
+tujiazu
+tuzu
+wazu
+weiwuerzu
+wuzibiekezu
+xibozu
+yaozu
+yizu
+yuguzu
+zangzu
+zhuangzu
