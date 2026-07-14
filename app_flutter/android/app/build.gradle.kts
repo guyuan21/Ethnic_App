@@ -25,6 +25,12 @@ android {
         versionName = flutter.versionName
     }
 
+    androidResources {
+        // The model is copied with a native stream on first launch. Keeping it
+        // uncompressed avoids a second large decompression buffer in the APK.
+        noCompress += listOf("onnx", "txt")
+    }
+
     packaging {
         jniLibs {
             pickFirsts += "lib/**/libonnxruntime.so"
@@ -55,5 +61,6 @@ flutter {
 }
 
 dependencies {
+    implementation(files("libs/libqcloudtts-release.aar"))
     implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
 }

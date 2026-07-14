@@ -9,8 +9,8 @@ Current behavior:
 - Uses `app_flutter/assets/model/labels.txt` for the 56 output classes.
 - Uses local OCR/TFLite only; results below 70% show a retry prompt.
 - Does not use a FastAPI backend.
-- Chat and online TTS fallback use configured Qwen APIs.
-- Speech-to-text uploads recordings to the public Fish S2 Pro Zero Gradio Space.
+- Chat uses the configured Qwen API. Online TTS fallback uses Tencent Cloud's Android SDK.
+- Speech-to-text runs fully offline with sherpa-onnx and the SenseVoice multilingual INT8 model; recordings and transcripts are not sent to an ASR server.
 - The hidden config page is still available from the home header with 5 taps and password `123456`.
 
 Model details:
@@ -25,6 +25,7 @@ Run:
 ```bash
 cd app_flutter
 flutter pub get
+powershell -ExecutionPolicy Bypass -File .\tool\download_sensevoice_model.ps1
 flutter run
 ```
 
@@ -32,7 +33,8 @@ Release build:
 
 ```bash
 cd app_flutter
-flutter build apk --release
+powershell -ExecutionPolicy Bypass -File .\tool\download_sensevoice_model.ps1
+flutter build apk --release --target-platform android-arm,android-arm64 --split-per-abi
 ```
 
 Optional dart defines for packaged defaults:
@@ -40,13 +42,12 @@ Optional dart defines for packaged defaults:
 ```bash
 flutter build apk --release ^
   --dart-define=QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1 ^
-  --dart-define=QWEN_CHAT_MODEL=qwen-turbo ^
-  --dart-define=ASR_SERVER_URL=https://artificialguybr-fish-s2-pro-zero.hf.space ^
-  --dart-define=QWEN_TTS_MODEL=qwen3-tts-flash ^
-  --dart-define=QWEN_TTS_VOICE=Cherry
+  --dart-define=QWEN_CHAT_MODEL=qwen-turbo
 ```
 
-API keys are never accepted from `dart-define` or packaged into the APK. Enter the chat, ASR, and TTS keys manually in the hidden device-local configuration page after installation.
+API keys are never accepted from `dart-define` or packaged into the APK. Enter the chat key and basic Tencent Cloud TTS credentials manually in the hidden device-local configuration page after installation. Offline ASR needs no key.
+
+The SenseVoice INT8 ONNX model is about 228 MiB. It is ignored by Git because it exceeds GitHub's normal per-file limit, but the download script verifies the official model's size and SHA-256 before a local build. The resulting APK includes the model and can recognize speech without a network connection.
 
 Verify:
 

@@ -43,8 +43,10 @@ class _ChatPageState extends State<ChatPage> {
       Duration(milliseconds: 1200);
   static const Duration _minManualRecordingDuration =
       Duration(milliseconds: 700);
-  static const Duration _silenceAutoStopDuration = Duration(milliseconds: 1600);
-  static const Duration _noiseCalibrationDuration = Duration(milliseconds: 650);
+  // 1.6 seconds was too aggressive for natural Chinese pauses on TV/tablet
+  // microphones. Keep a longer pause while still auto-submitting promptly.
+  static const Duration _silenceAutoStopDuration = Duration(milliseconds: 2200);
+  static const Duration _noiseCalibrationDuration = Duration(milliseconds: 450);
   static const Duration _amplitudePollInterval = Duration(milliseconds: 180);
   static const int _recordingSampleRate = 16000;
   static const int _recordingBitRate = 32000;
@@ -109,6 +111,13 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    unawaited(
+      ApiService.prewarmOfflineAsr().catchError((Object _) {
+        // The first real transcription retries and displays a useful error.
+        // Loading only after entering chat avoids reserving hundreds of MB
+        // while the user is using image recognition on low-memory devices.
+      }),
+    );
     _tts.setStartHandler(() {
       final completer = _ttsStartCompleter;
       if (completer != null && !completer.isCompleted) completer.complete();
@@ -130,8 +139,8 @@ class _ChatPageState extends State<ChatPage> {
         startCompleter.completeError(Exception(message));
         return;
       }
-      final fallbackText = _lastSpeechText;
       _ttsReady = false;
+      final fallbackText = _lastSpeechText;
       if (fallbackText != null &&
           fallbackText.isNotEmpty &&
           _autoReadEnabled &&
@@ -238,7 +247,7 @@ class _ChatPageState extends State<ChatPage> {
         _ttsStartCompleter = Completer<void>();
         final result = await _tts.speak(text);
         if (result == 0 || result.toString() == '0') {
-          throw Exception('TTS engine rejected speak request');
+          throw Exception('系统 TTS 拒绝了朗读请求');
         }
         await _ttsStartCompleter!.future.timeout(
           const Duration(milliseconds: 2500),
@@ -247,7 +256,7 @@ class _ChatPageState extends State<ChatPage> {
         systemTtsSpoke = true;
         if (!mounted) return;
         setState(() {
-          _speechStatus = '正在朗读回答';
+          _speechStatus = '正在使用系统 TTS 朗读回答';
         });
       }
     } catch (_) {
@@ -256,7 +265,6 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (systemTtsSpoke) return;
-
     await _speakOnline(text);
   }
 
@@ -267,17 +275,17 @@ class _ChatPageState extends State<ChatPage> {
       await _tts.stop();
       if (!mounted) return;
       setState(() {
-        _speechStatus = '系统朗读不可用，正在连接千问朗读';
+        _speechStatus = '系统 TTS 不可用，正在连接大模型 TTS';
       });
       await OnlineTtsService.instance.speak(text);
       if (!mounted) return;
       setState(() {
-        _speechStatus = '正在使用千问联网朗读回答';
+        _speechStatus = '正在使用大模型 TTS 朗读回答';
       });
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
       setState(() {
-        _speechStatus = '系统与联网朗读均不可用：$e';
+        _speechStatus = '系统与大模型 TTS 均不可用：$error';
       });
     } finally {
       _onlineTtsFallbackActive = false;
@@ -328,7 +336,7 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _speechStatus = '回答失败，请检查网络后重试';
         final errorText =
-            '暂时无法回答：$e\n\n请检查网络、聊天接口密钥、聊天模型和语音识别服务器地址。图片识别使用本地参考图库、OCR和TFLite，不需要视觉模型接口。';
+            '暂时无法回答：$e\n\n请检查网络、聊天接口密钥和聊天模型。语音识别使用本地离线模型；图片识别使用本地TFLite，OCR仅辅助读取文字。';
         if (pendingIndex < _messages.length) {
           _messages[pendingIndex] =
               ChatMessage(role: 'assistant', text: errorText);
@@ -388,12 +396,12 @@ class _ChatPageState extends State<ChatPage> {
         _recording = true;
         _transcribing = false;
         _controller.clear();
-        _speechStatus = '正在录音（${recordingTarget.formatName}），说完停顿一下会自动识别';
+        _speechStatus = '正在录音，说完停顿一下会自动识别';
       });
 
       if (mounted) {
         setState(() {
-          _speechStatus = '正在录音（${recordingTarget.formatName}），说完停顿一下会自动识别';
+          _speechStatus = '正在录音，说完停顿一下会自动识别';
         });
       }
 
@@ -447,33 +455,13 @@ class _ChatPageState extends State<ChatPage> {
   Future<_RecordingTarget> _startRecorder(String tempDirPath) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-    try {
-      if (await _audioRecorder.isEncoderSupported(AudioEncoder.wav)) {
-        final path = '$tempDirPath/culture_voice_$timestamp.wav';
-        await _audioRecorder.start(
-          const RecordConfig(
-            encoder: AudioEncoder.wav,
-            bitRate: _recordingBitRate,
-            sampleRate: _recordingSampleRate,
-            numChannels: 1,
-            autoGain: true,
-            echoCancel: true,
-            noiseSuppress: true,
-          ),
-          path: path,
-        );
-        return _RecordingTarget(path: path, formatName: 'WAV');
-      }
-    } catch (_) {
-      try {
-        await _audioRecorder.cancel();
-      } catch (_) {}
+    if (!await _audioRecorder.isEncoderSupported(AudioEncoder.wav)) {
+      throw StateError('当前设备无法录制离线识别所需的音频。');
     }
-
-    final path = '$tempDirPath/culture_voice_$timestamp.m4a';
+    final path = '$tempDirPath/culture_voice_$timestamp.wav';
     await _audioRecorder.start(
       const RecordConfig(
-        encoder: AudioEncoder.aacLc,
+        encoder: AudioEncoder.wav,
         bitRate: _recordingBitRate,
         sampleRate: _recordingSampleRate,
         numChannels: 1,
@@ -483,7 +471,7 @@ class _ChatPageState extends State<ChatPage> {
       ),
       path: path,
     );
-    return _RecordingTarget(path: path, formatName: 'AAC');
+    return _RecordingTarget(path: path, formatName: 'WAV');
   }
 
   void _startSilenceAutoStopWatch() {
@@ -527,7 +515,7 @@ class _ChatPageState extends State<ChatPage> {
       _lastVoiceAt = now;
       if (firstVoice && mounted) {
         setState(() {
-          _speechStatus = '正在录音（$_activeRecordingFormat），已听到说话，停顿后自动识别';
+          _speechStatus = '正在录音，已听到说话，停顿后自动识别';
         });
       }
       return;

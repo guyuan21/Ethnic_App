@@ -12,12 +12,12 @@ class ModelConfigPage extends StatefulWidget {
 class _ModelConfigPageState extends State<ModelConfigPage> {
   final _qwenBaseUrlController = TextEditingController();
   final _qwenApiKeyController = TextEditingController();
-  final _asrServerUrlController = TextEditingController();
-  final _qwenTtsUrlController = TextEditingController();
-  final _qwenTtsApiKeyController = TextEditingController();
   final _qwenChatModelController = TextEditingController();
-  final _qwenTtsModelController = TextEditingController();
-  final _qwenTtsVoiceController = TextEditingController();
+  final _tencentAppIdController = TextEditingController();
+  final _tencentSecretIdController = TextEditingController();
+  final _tencentSecretKeyController = TextEditingController();
+  final _tencentTokenController = TextEditingController();
+  final _tencentVoiceTypeController = TextEditingController();
 
   bool _loading = true;
   bool _saving = false;
@@ -31,14 +31,18 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
 
   @override
   void dispose() {
-    _qwenBaseUrlController.dispose();
-    _qwenApiKeyController.dispose();
-    _asrServerUrlController.dispose();
-    _qwenTtsUrlController.dispose();
-    _qwenTtsApiKeyController.dispose();
-    _qwenChatModelController.dispose();
-    _qwenTtsModelController.dispose();
-    _qwenTtsVoiceController.dispose();
+    for (final controller in <TextEditingController>[
+      _qwenBaseUrlController,
+      _qwenApiKeyController,
+      _qwenChatModelController,
+      _tencentAppIdController,
+      _tencentSecretIdController,
+      _tencentSecretKeyController,
+      _tencentTokenController,
+      _tencentVoiceTypeController,
+    ]) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -46,76 +50,84 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
     final config = await ModelConfigService.load();
     if (!mounted) return;
     _apply(config);
-    setState(() {
-      _loading = false;
-    });
+    setState(() => _loading = false);
   }
 
   void _apply(ModelRuntimeConfig config) {
     _qwenBaseUrlController.text = config.qwenBaseUrl;
     _qwenApiKeyController.text = config.qwenApiKey;
-    _asrServerUrlController.text = config.asrServerUrl;
-    _qwenTtsUrlController.text = config.qwenTtsUrl;
-    _qwenTtsApiKeyController.text = config.qwenTtsApiKey;
     _qwenChatModelController.text = config.qwenChatModel;
-    _qwenTtsModelController.text = config.qwenTtsModel;
-    _qwenTtsVoiceController.text = config.qwenTtsVoice;
+    _tencentAppIdController.text = config.tencentAppId;
+    _tencentSecretIdController.text = config.tencentSecretId;
+    _tencentSecretKeyController.text = config.tencentSecretKey;
+    _tencentTokenController.text = config.tencentToken;
+    _tencentVoiceTypeController.text = config.tencentVoiceType;
   }
 
   ModelRuntimeConfig _readConfig() {
     return ModelRuntimeConfig(
       qwenBaseUrl: _qwenBaseUrlController.text,
       qwenApiKey: _qwenApiKeyController.text,
-      asrServerUrl: _asrServerUrlController.text,
-      qwenTtsUrl: _qwenTtsUrlController.text,
-      qwenTtsApiKey: _qwenTtsApiKeyController.text,
       qwenChatModel: _qwenChatModelController.text,
-      qwenTtsModel: _qwenTtsModelController.text,
-      qwenTtsVoice: _qwenTtsVoiceController.text,
+      tencentAppId: _tencentAppIdController.text,
+      tencentSecretId: _tencentSecretIdController.text,
+      tencentSecretKey: _tencentSecretKeyController.text,
+      tencentToken: _tencentTokenController.text,
+      tencentVoiceType: _tencentVoiceTypeController.text,
     );
   }
 
+  String? _validate() {
+    final appId = _tencentAppIdController.text.trim();
+    if (appId.isNotEmpty && int.tryParse(appId) == null) {
+      return '腾讯云 AppID 必须是整数。';
+    }
+
+    final secretId = _tencentSecretIdController.text.trim();
+    final secretKey = _tencentSecretKeyController.text.trim();
+    if (secretId.isEmpty != secretKey.isEmpty) {
+      return 'SecretId 和 SecretKey 需要同时填写。';
+    }
+
+    final voiceType = int.tryParse(_tencentVoiceTypeController.text.trim());
+    if (voiceType == null || voiceType < 0) {
+      return 'VoiceType 必须是有效的非负整数。';
+    }
+    return null;
+  }
+
   Future<void> _save() async {
-    setState(() {
-      _saving = true;
-    });
+    final validationError = _validate();
+    if (validationError != null) {
+      _showMessage(validationError);
+      return;
+    }
+
+    setState(() => _saving = true);
     try {
       await ModelConfigService.save(_readConfig());
       if (!mounted) return;
-      _showMessage('已保存，聊天、语音识别和联网朗读将使用这组配置。');
-    } catch (e) {
+      _showMessage('配置已保存。');
+    } catch (error) {
       if (!mounted) return;
-      _showMessage('保存失败：$e');
+      _showMessage('保存失败：$error');
     } finally {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-        });
-      }
+      if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _restoreDefaults() async {
-    setState(() {
-      _saving = true;
-    });
+    setState(() => _saving = true);
     try {
       await ModelConfigService.clear();
-      final defaults = ModelRuntimeConfig.packagedDefaults();
       if (!mounted) return;
-      setState(() {
-        _apply(defaults);
-      });
-      _showMessage('已恢复为打包默认配置。');
-    } catch (e) {
+      setState(() => _apply(ModelRuntimeConfig.packagedDefaults()));
+      _showMessage('已恢复默认配置并清除密钥。');
+    } catch (error) {
       if (!mounted) return;
-      _showMessage('恢复失败：$e');
+      _showMessage('恢复失败：$error');
     } finally {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-        });
-      }
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -128,7 +140,7 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('模型与语音服务配置')),
+      appBar: AppBar(title: const Text('模型接口配置')),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -138,67 +150,67 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
                     children: [
-                      const ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('聊天、语音识别与朗读服务'),
-                        subtitle: Text(
-                          '图片固定使用本地文件名、参考图库、中文OCR和TFLite。语音转文字使用Fish S2 Pro Zero服务器，无需千问ASR密钥；系统朗读不可用时使用联网TTS。',
-                        ),
-                      ),
                       SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
                         value: _showKeys,
-                        onChanged: (value) {
-                          setState(() {
-                            _showKeys = value;
-                          });
-                        },
+                        onChanged: (value) => setState(() => _showKeys = value),
                         title: const Text('显示接口密钥'),
                       ),
-                      _Field(
-                        controller: _qwenBaseUrlController,
-                        label: '接口地址',
-                        hint:
-                            'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                        keyboardType: TextInputType.url,
+                      _Section(
+                        title: '聊天模型',
+                        subtitle: '用于联网聊天回答。聊天密钥不会用于语音合成。',
+                        children: [
+                          _Field(
+                            controller: _qwenBaseUrlController,
+                            label: '聊天接口地址',
+                            hint:
+                                'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                            keyboardType: TextInputType.url,
+                          ),
+                          _Field(
+                            controller: _qwenApiKeyController,
+                            label: '聊天接口密钥',
+                            obscureText: !_showKeys,
+                          ),
+                          _Field(
+                            controller: _qwenChatModelController,
+                            label: '聊天模型',
+                            hint: 'qwen-turbo',
+                          ),
+                        ],
                       ),
-                      _Field(
-                        controller: _qwenApiKeyController,
-                        label: '聊天接口密钥',
-                        obscureText: !_showKeys,
-                      ),
-                      _Field(
-                        controller: _asrServerUrlController,
-                        label: '语音识别服务器地址',
-                        hint:
-                            'https://artificialguybr-fish-s2-pro-zero.hf.space',
-                        keyboardType: TextInputType.url,
-                      ),
-                      _Field(
-                        controller: _qwenTtsApiKeyController,
-                        label: '联网朗读接口密钥（可选，留空则使用聊天密钥）',
-                        obscureText: !_showKeys,
-                      ),
-                      _Field(
-                        controller: _qwenChatModelController,
-                        label: '聊天模型',
-                        hint: 'qwen-turbo',
-                      ),
-                      _Field(
-                        controller: _qwenTtsUrlController,
-                        label: '联网朗读接口地址',
-                        hint:
-                            'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-                        keyboardType: TextInputType.url,
-                      ),
-                      _Field(
-                        controller: _qwenTtsModelController,
-                        label: '联网朗读模型',
-                        hint: 'qwen3-tts-flash',
-                      ),
-                      _Field(
-                        controller: _qwenTtsVoiceController,
-                        label: '联网朗读音色',
-                        hint: 'Cherry',
+                      const SizedBox(height: 12),
+                      _Section(
+                        title: '腾讯云文字朗读',
+                        subtitle: '设备系统朗读不可用时启用；不再提供其他 TTS 服务商切换。',
+                        children: [
+                          _Field(
+                            controller: _tencentAppIdController,
+                            label: 'AppID（可选）',
+                            keyboardType: TextInputType.number,
+                          ),
+                          _Field(
+                            controller: _tencentSecretIdController,
+                            label: 'SecretId',
+                            obscureText: !_showKeys,
+                          ),
+                          _Field(
+                            controller: _tencentSecretKeyController,
+                            label: 'SecretKey',
+                            obscureText: !_showKeys,
+                          ),
+                          _Field(
+                            controller: _tencentTokenController,
+                            label: 'STS Token（临时凭证时填写）',
+                            obscureText: !_showKeys,
+                          ),
+                          _Field(
+                            controller: _tencentVoiceTypeController,
+                            label: '音色 VoiceType',
+                            hint: '1001',
+                            keyboardType: TextInputType.number,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 18),
                       Wrap(
@@ -234,6 +246,38 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
   }
 }
 
+class _Section extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final List<Widget> children;
+
+  const _Section({
+    required this.title,
+    required this.subtitle,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 14),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Field extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -259,10 +303,7 @@ class _Field extends StatelessWidget {
         enableSuggestions: !obscureText,
         autocorrect: false,
         keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-        ),
+        decoration: InputDecoration(labelText: label, hintText: hint),
       ),
     );
   }

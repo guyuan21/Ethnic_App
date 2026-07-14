@@ -1,6 +1,6 @@
 name: app_flutter
 description: Local cartoon ethnic culture recognition app
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -15,10 +15,10 @@ dependencies:
   http: ^1.2.2
   image_picker: ^1.1.2
   image: ^4.9.1
-  audioplayers: ^6.5.1
   path: ^1.9.1
   path_provider: ^2.1.5
   record: ^7.1.1
+  sherpa_onnx: ^1.13.4
   shared_preferences: ^2.3.3
   tflite_flutter: ^0.12.1
 
@@ -34,5 +34,6 @@ flutter:
     - assets/culture_info.json
     - assets/costume_reference.json
     - assets/model/
+    - assets/asr/sensevoice/
     - assets/costumes/
     - assets/totems/

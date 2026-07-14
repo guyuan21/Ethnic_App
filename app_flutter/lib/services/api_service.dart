@@ -11,8 +11,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'cartoon_classifier_service.dart';
-import 'local_reference_matcher_service.dart';
 import 'model_config_service.dart';
+import 'offline_asr_service.dart';
 
 class ApiService {
   static const double _minCartoonConfidence = 0.70;
@@ -21,12 +21,10 @@ class ApiService {
   static Map<String, Map<String, dynamic>>? _cultureInfoCache;
   static List<Map<String, dynamic>>? _costumeReferenceCache;
 
-  static Future<void> prewarmLocalCostumeMatcher() async {
-    await Future.wait([
-      CartoonClassifierService.instance.load(),
-      LocalReferenceMatcherService.instance.load(),
-    ]);
-  }
+  static Future<void> prewarmLocalCostumeMatcher() =>
+      CartoonClassifierService.instance.load();
+
+  static Future<void> prewarmOfflineAsr() => OfflineAsrService.prewarm();
 
   static String resolveUrl(String pathOrUrl) {
     return pathOrUrl;
@@ -34,54 +32,8 @@ class ApiService {
 
   static Future<Map<String, dynamic>> recognizeImage(XFile imageFile) async {
     final cultureInfo = await _cultureInfo();
-    final filenameLabel = await _matchLabelFromOcrText(
-      imageFile.name.isEmpty ? imageFile.path : imageFile.name,
-      cultureInfo,
-    );
     final bytes = await imageFile.readAsBytes();
-    final referenceCandidate =
-        await LocalReferenceMatcherService.instance.bestCandidate(bytes);
-    if (referenceCandidate != null &&
-        referenceCandidate.isStrongReference &&
-        cultureInfo.containsKey(referenceCandidate.label)) {
-      return _formatResult(
-        results: [
-          _toResult(
-            referenceCandidate.label,
-            referenceCandidate.confidence,
-            cultureInfo[referenceCandidate.label]!,
-          ),
-        ],
-        predictions: const [],
-        engine: referenceCandidate.engine,
-      );
-    }
-
     final ocrMatch = await _tryOcrTitleMatch(imageFile, cultureInfo);
-    final supportingLabel = ocrMatch?.label ?? filenameLabel;
-    final hasCostumeEvidence = referenceCandidate != null &&
-        referenceCandidate.confidence >= 0.30 &&
-        referenceCandidate.margin >= 0.04;
-
-    if (hasCostumeEvidence &&
-        supportingLabel != null &&
-        supportingLabel == referenceCandidate.label &&
-        cultureInfo.containsKey(supportingLabel)) {
-      return _formatResult(
-        results: [
-          _toResult(
-            supportingLabel,
-            ocrMatch?.label == supportingLabel ? 0.99 : 0.96,
-            cultureInfo[supportingLabel]!,
-          ),
-        ],
-        predictions: const [],
-        engine: ocrMatch?.label == supportingLabel
-            ? 'local_title_ocr_match'
-            : 'local_filename_match',
-        ocrText: ocrMatch?.text,
-      );
-    }
 
     final predictions = await CartoonClassifierService.instance.classify(bytes);
     final recognized = predictions
@@ -89,20 +41,10 @@ class ApiService {
         .toList(growable: false);
 
     final best = recognized.isEmpty ? null : recognized.first;
-    final supportedCostumeResult = best != null &&
-        best.confidence >= _minCartoonConfidence &&
-        hasCostumeEvidence &&
-        referenceCandidate.label == best.label;
-
-    if (!supportedCostumeResult) {
-      final warning = !hasCostumeEvidence
-          ? '仅支持民族服饰卡通图片。当前图片不像已收录的服饰卡通参考图，请更换服饰人物图片后重试。'
-          : best == null || best.confidence < _minCartoonConfidence
-              ? '本地服饰模型最高置信度低于70%，暂不展示结果。请保持服饰人物主体清晰、完整并减少反光。'
-              : '服饰模型与本地参考图库判断不一致，为避免误识别暂不展示结果，请重新拍摄。';
+    if (best == null || best.confidence < _minCartoonConfidence) {
       return _formatResult(
         results: const [],
-        warning: warning,
+        warning: '本地服饰模型最高置信度低于70%，暂不展示结果。请保持服饰人物主体清晰、完整并减少反光。',
         predictions: predictions,
         ocrText: ocrMatch?.text,
       );
@@ -110,7 +52,11 @@ class ApiService {
 
     return _formatResult(
       results: [
-        _toResult(best.label, best.confidence, cultureInfo[best.label]!),
+        _toResult(
+          best.label,
+          best.confidence,
+          cultureInfo[best.label]!,
+        ),
       ],
       predictions: predictions,
       ocrText: ocrMatch?.text,
@@ -119,132 +65,9 @@ class ApiService {
 
   static Future<String> transcribeAudio(String audioPath) async {
     if (kIsWeb) {
-      throw Exception('网页端暂不支持语音上传，请直接输入文字。');
+      throw Exception('网页端暂不支持离线语音识别，请直接输入文字。');
     }
-
-    final config = await ModelConfigService.load();
-    final baseUri = _asrServerUri(config.asrServerUrl);
-    final audioFile = File(audioPath);
-    if (!await audioFile.exists() || await audioFile.length() == 0) {
-      throw Exception('音频文件为空。');
-    }
-
-    final uploadRequest = http.MultipartRequest(
-      'POST',
-      baseUri.resolve('/gradio_api/upload'),
-    );
-    uploadRequest.files.add(
-      await http.MultipartFile.fromPath('files', audioPath),
-    );
-    final uploadResponse = await uploadRequest.send().timeout(
-          const Duration(seconds: 90),
-        );
-    final uploadBody = await uploadResponse.stream.bytesToString();
-    if (uploadResponse.statusCode < 200 || uploadResponse.statusCode >= 300) {
-      throw Exception(
-        '语音文件上传失败（${uploadResponse.statusCode}）：$uploadBody',
-      );
-    }
-    final uploadedPath = _extractGradioUploadPath(uploadBody);
-
-    final submitResponse = await http
-        .post(
-          baseUri.resolve('/gradio_api/call/transcribe_audio'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'data': [
-              {
-                'path': uploadedPath,
-                'orig_name': p.basename(audioPath),
-                'size': await audioFile.length(),
-                'mime_type': _mimeTypeForName(
-                  audioPath,
-                  fallback: 'audio/wav',
-                ),
-                'is_stream': false,
-                'meta': {'_type': 'gradio.FileData'},
-              },
-            ],
-          }),
-        )
-        .timeout(const Duration(seconds: 60));
-    if (submitResponse.statusCode < 200 || submitResponse.statusCode >= 300) {
-      throw Exception(
-        '语音识别任务提交失败（${submitResponse.statusCode}）：${submitResponse.body}',
-      );
-    }
-    final submitData = jsonDecode(submitResponse.body);
-    final eventId = submitData is Map
-        ? (submitData['event_id'] ?? '').toString().trim()
-        : '';
-    if (eventId.isEmpty) throw Exception('语音识别服务器没有返回任务编号。');
-
-    final resultResponse = await http
-        .get(baseUri.resolve('/gradio_api/call/transcribe_audio/$eventId'))
-        .timeout(const Duration(minutes: 5));
-    if (resultResponse.statusCode < 200 || resultResponse.statusCode >= 300) {
-      throw Exception(
-        '获取语音识别结果失败（${resultResponse.statusCode}）：${resultResponse.body}',
-      );
-    }
-    final text = _extractGradioSseText(resultResponse.body).trim();
-    if (text.isEmpty) throw Exception('语音识别没有返回文字。');
-    return _normalizeTranscriptPunctuation(text);
-  }
-
-  static Uri _asrServerUri(String value) {
-    final normalized = value.trim().replaceFirst(RegExp(r'/+$'), '');
-    final uri = Uri.tryParse(normalized);
-    if (uri == null ||
-        uri.scheme != 'https' ||
-        !uri.hasAuthority ||
-        uri.host.isEmpty) {
-      throw Exception('语音识别服务器地址无效，只允许使用 HTTPS 地址。');
-    }
-    return Uri.parse('$normalized/');
-  }
-
-  static String _extractGradioUploadPath(String body) {
-    final decoded = jsonDecode(body);
-    if (decoded is! List || decoded.isEmpty) {
-      throw Exception('语音识别服务器没有返回上传文件路径。');
-    }
-    final first = decoded.first;
-    final path = first is Map
-        ? (first['path'] ?? '').toString().trim()
-        : first.toString().trim();
-    if (path.isEmpty) throw Exception('语音识别服务器返回了空文件路径。');
-    return path;
-  }
-
-  static String _extractGradioSseText(String body) {
-    String? completedData;
-    String? errorData;
-    for (final block in body.split(RegExp(r'\r?\n\r?\n'))) {
-      String event = '';
-      final dataLines = <String>[];
-      for (final line in block.split(RegExp(r'\r?\n'))) {
-        if (line.startsWith('event:')) {
-          event = line.substring('event:'.length).trim();
-        } else if (line.startsWith('data:')) {
-          dataLines.add(line.substring('data:'.length).trim());
-        }
-      }
-      final data = dataLines.join('\n');
-      if (event == 'complete') completedData = data;
-      if (event == 'error') errorData = data;
-    }
-    if (errorData != null && errorData.isNotEmpty) {
-      throw Exception('语音识别服务器处理失败：$errorData');
-    }
-    if (completedData == null || completedData.isEmpty) {
-      throw Exception('语音识别服务器未返回完成事件，可能正在排队或暂不可用。');
-    }
-    final decoded = jsonDecode(completedData);
-    if (decoded is List && decoded.isNotEmpty) {
-      return decoded.first?.toString() ?? '';
-    }
-    return decoded?.toString() ?? '';
+    return OfflineAsrService.transcribe(audioPath);
   }
 
   static Future<String> askQuestion(
@@ -283,7 +106,7 @@ $question
 ''';
 
     final data = await _postQwen(
-      apiKey: _apiKey(config, config.qwenApiKey),
+      apiKey: _apiKey(config.qwenApiKey),
       config: config,
       payload: {
         'model': config.qwenChatModel,
@@ -628,8 +451,8 @@ $question
     return Uri.parse('$normalizedBase/chat/completions');
   }
 
-  static String _apiKey(ModelRuntimeConfig config, String specificKey) {
-    final key = config.keyFor(specificKey);
+  static String _apiKey(String specificKey) {
+    final key = specificKey.trim();
     if (key.isEmpty) {
       throw Exception('缺少接口密钥，请打开隐藏配置页填写。');
     }
@@ -675,44 +498,6 @@ $question
       }).join();
     }
     return (content ?? '').toString();
-  }
-
-  static String _mimeTypeForName(String name, {required String fallback}) {
-    final lower = name.toLowerCase();
-    if (lower.endsWith('.wav')) return 'audio/wav';
-    if (lower.endsWith('.m4a') || lower.endsWith('.mp4')) return 'audio/mp4';
-    if (lower.endsWith('.aac')) return 'audio/aac';
-    if (lower.endsWith('.mp3')) return 'audio/mpeg';
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    return fallback;
-  }
-
-  static String _normalizeTranscriptPunctuation(String value) {
-    var text = value
-        .replaceAll(RegExp(r'''^\s*[“”"']+|[“”"']+\s*$'''), '')
-        .replaceAll(',', '，')
-        .replaceAll(';', '；')
-        .replaceAll(':', '：')
-        .replaceAll('?', '？')
-        .replaceAll('!', '！')
-        .replaceAll(RegExp(r'\.{2,}'), '。')
-        .replaceAll(RegExp(r'([，。！？；：])\1+'), r'$1')
-        .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])'), '')
-        .trim();
-    if (text.isEmpty) return text;
-
-    final asksQuestion = RegExp(
-      r'^(请问|能不能|可不可以|有没有|是否)|为什么|怎么|怎样|什么|哪里|哪儿|哪个|多少|几种|吗[。！]?$|呢[。！]?$',
-    ).hasMatch(text);
-    if (asksQuestion) {
-      text = text.replaceFirst(RegExp(r'[。！]$'), '？');
-      if (!text.endsWith('？')) text = '$text？';
-    } else if (!RegExp(r'[。！？]$').hasMatch(text)) {
-      text = '$text。';
-    }
-    return text;
   }
 
   static String _shorten(String value, int maxLength) {

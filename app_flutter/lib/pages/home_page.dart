@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -31,15 +30,15 @@ class _HomePageState extends State<HomePage> {
     unawaited(
       ApiService.prewarmLocalCostumeMatcher().catchError((Object _) {
         // Prewarming is optional. Recognition will surface a useful error if
-        // the model is genuinely unavailable when the user selects an image.
+        // the model is genuinely unavailable when the user takes a photo.
       }),
     );
   }
 
-  Future<void> _pickAndRecognize(ImageSource source) async {
+  Future<void> _captureAndRecognize() async {
     try {
       final pickedFile = await _picker.pickImage(
-        source: source,
+        source: ImageSource.camera,
         imageQuality: 85,
         maxWidth: 1600,
         maxHeight: 1600,
@@ -160,8 +159,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    const cameraLabel = kIsWeb ? '拍照/选择图片' : '拍照识别';
-
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -180,22 +177,10 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 18),
                     _ActionTile(
                       icon: Icons.photo_camera_outlined,
-                      title: cameraLabel,
+                      title: '拍照识别',
                       subtitle: '现场拍摄民族服饰卡通人物',
                       color: const Color(0xFFB84A39),
-                      onTap: _loading
-                          ? null
-                          : () => _pickAndRecognize(ImageSource.camera),
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionTile(
-                      icon: Icons.photo_library_outlined,
-                      title: '上传图片识别',
-                      subtitle: '从相册选择民族服饰卡通图片',
-                      color: const Color(0xFF2F6F73),
-                      onTap: _loading
-                          ? null
-                          : () => _pickAndRecognize(ImageSource.gallery),
+                      onTap: _loading ? null : _captureAndRecognize,
                     ),
                     const SizedBox(height: 12),
                     _ActionTile(

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
@@ -45,10 +46,34 @@ class CartoonClassifierService {
     }
 
     final input = _preprocess(image);
-    final output = [List<double>.filled(labels.length, 0)];
-    interpreter.run(input, output);
+    final inputTensor = interpreter.getInputTensor(0);
+    final outputTensor = interpreter.getOutputTensor(0);
 
-    final scores = _toProbabilities(output.first);
+    // Write the tensor as contiguous float32 bytes. Passing a four-level Dart
+    // List makes tflite_flutter recursively infer and convert every element;
+    // on some Android devices that path can produce platform-dependent input.
+    // Direct tensor I/O keeps the exact same RGB values and model math on all
+    // devices, so this is a runtime fix rather than a class-specific rule.
+    inputTensor.data = Uint8List.view(
+      input.buffer,
+      input.offsetInBytes,
+      input.lengthInBytes,
+    );
+    interpreter.invoke();
+
+    final outputBytes = outputTensor.data;
+    final outputValues = Float32List.view(
+      outputBytes.buffer,
+      outputBytes.offsetInBytes,
+      labels.length,
+    );
+    final output = List<double>.generate(
+      labels.length,
+      (index) => outputValues[index],
+      growable: false,
+    );
+
+    final scores = _toProbabilities(output);
     final indexed = <CartoonPrediction>[];
     for (var i = 0; i < math.min(labels.length, scores.length); i += 1) {
       indexed.add(
@@ -69,6 +94,27 @@ class CartoonClassifierService {
         .toList(growable: false);
 
     final outputShape = interpreter.getOutputTensor(0).shape;
+    final inputTensor = interpreter.getInputTensor(0);
+    final outputTensor = interpreter.getOutputTensor(0);
+    final inputShape = inputTensor.shape;
+    if (inputTensor.type != TensorType.float32 ||
+        inputShape.length != 4 ||
+        inputShape[0] != 1 ||
+        inputShape[1] != _inputSize ||
+        inputShape[2] != _inputSize ||
+        inputShape[3] != 3) {
+      interpreter.close();
+      throw Exception(
+        'Unsupported model input: ${inputTensor.type} $inputShape. '
+        'Expected float32 [1, $_inputSize, $_inputSize, 3].',
+      );
+    }
+    if (outputTensor.type != TensorType.float32) {
+      interpreter.close();
+      throw Exception(
+        'Unsupported model output: ${outputTensor.type}. Expected float32.',
+      );
+    }
     if (outputShape.length != 2 || outputShape.last != labels.length) {
       interpreter.close();
       throw Exception(
@@ -81,7 +127,7 @@ class CartoonClassifierService {
     _labels = labels;
   }
 
-  List<List<List<List<double>>>> _preprocess(img.Image source) {
+  Float32List _preprocess(img.Image source) {
     final oriented = img.bakeOrientation(source);
     final resized = img.copyResize(
       oriented,
@@ -90,18 +136,18 @@ class CartoonClassifierService {
       interpolation: img.Interpolation.linear,
     );
 
-    return [
-      List.generate(_inputSize, (y) {
-        return List.generate(_inputSize, (x) {
-          final pixel = resized.getPixel(x, y);
-          final alpha = (pixel.a / 255.0).clamp(0.0, 1.0).toDouble();
-          final r = (pixel.r * alpha) + (255 * (1 - alpha));
-          final g = (pixel.g * alpha) + (255 * (1 - alpha));
-          final b = (pixel.b * alpha) + (255 * (1 - alpha));
-          return [r, g, b];
-        });
-      }),
-    ];
+    final input = Float32List(_inputSize * _inputSize * 3);
+    var offset = 0;
+    for (var y = 0; y < _inputSize; y += 1) {
+      for (var x = 0; x < _inputSize; x += 1) {
+        final pixel = resized.getPixel(x, y);
+        final alpha = (pixel.a / 255.0).clamp(0.0, 1.0).toDouble();
+        input[offset++] = (pixel.r * alpha) + (255 * (1 - alpha));
+        input[offset++] = (pixel.g * alpha) + (255 * (1 - alpha));
+        input[offset++] = (pixel.b * alpha) + (255 * (1 - alpha));
+      }
+    }
+    return input;
   }
 
   List<double> _toProbabilities(List<double> values) {

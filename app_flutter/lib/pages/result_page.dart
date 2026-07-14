@@ -36,15 +36,6 @@ class _ResultPageState extends State<ResultPage> {
     if (engine == 'local_cartoon_tflite') {
       return '本地卡通模型识别';
     }
-    if (engine == 'local_costume_asset_match') {
-      return '本地书册服饰图库匹配';
-    }
-    if (engine == 'local_title_ocr_match') {
-      return '标题文字识别匹配';
-    }
-    if (engine == 'local_filename_match') {
-      return '图片文件名匹配';
-    }
     return '图像识别模型匹配';
   }
 
@@ -140,7 +131,7 @@ class _ResultPageState extends State<ResultPage> {
                   child: Text(
                     allResults.isEmpty
                         ? '暂未识别到支持的民族服饰卡通图片。'
-                        : '识别结果置信度不足，暂不展示具体民族文化结果。建议重新拍摄，尽量保持图片清晰、完整、光线充足。',
+                        : '识别结果置信度不足，建议重新拍摄，尽量保持图片清晰、完整、光线充足。',
                   ),
                 )
               else ...[

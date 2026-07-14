@@ -23,3 +23,7 @@ android/local.properties
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# SenseVoice INT8 is 228 MiB and exceeds GitHub's normal 100 MiB file limit.
+# Run tool/download_sensevoice_model.ps1 before building a fresh checkout.
+assets/asr/sensevoice/model.int8.onnx
