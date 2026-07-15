@@ -69,7 +69,7 @@ Android 使用 Maven Central 的：
 
 ```kotlin
 implementation("org.pytorch:executorch-android:1.3.1")
-implementation("com.microsoft.onnxruntime:onnxruntime-android:1.23.2")
+implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.3")
 ```
 
 `.pte` 的导出版本和 Android ExecuTorch 运行时版本应保持一致。旧 `ethnic_model.tflite` 仅作为本地回退文件保留在源码目录中，不再由 `pubspec.yaml` 打进安装包，也没有运行时调用。
