@@ -1,9 +1,6 @@
 param(
     [string]$QwenBaseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    [string]$QwenTtsUrl = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
     [string]$ChatModel = "qwen-turbo",
-    [string]$TtsModel = "qwen3-tts-flash",
-    [string]$TtsVoice = "Cherry",
     [ValidateSet("apk", "appbundle")]
     [string]$Target = "apk",
     [ValidateSet("debug", "profile", "release")]
@@ -14,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 Push-Location $PSScriptRoot
 try {
-    Write-Host "Image recognition uses local OCR/TFLite only; results below 70% show a retry prompt." -ForegroundColor Cyan
+    Write-Host "Image recognition uses local ExecuTorch + OCR; results below 70% show a retry prompt." -ForegroundColor Cyan
     Write-Host "Speech recognition uses bundled sherpa-onnx + SenseVoice INT8 and needs no API key." -ForegroundColor Cyan
     & (Join-Path $PSScriptRoot "tool\download_sensevoice_model.ps1")
     $logDir = Join-Path $PSScriptRoot "build_logs"
@@ -26,10 +23,7 @@ try {
         $Target,
         "--$Mode",
         "--dart-define=QWEN_BASE_URL=$QwenBaseUrl",
-        "--dart-define=QWEN_TTS_URL=$QwenTtsUrl",
-        "--dart-define=QWEN_CHAT_MODEL=$ChatModel",
-        "--dart-define=QWEN_TTS_MODEL=$TtsModel",
-        "--dart-define=QWEN_TTS_VOICE=$TtsVoice"
+        "--dart-define=QWEN_CHAT_MODEL=$ChatModel"
     )
     if ($Target -eq "apk") {
         $flutterArgs += @(

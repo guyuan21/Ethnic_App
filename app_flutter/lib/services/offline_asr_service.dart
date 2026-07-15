@@ -27,6 +27,21 @@ class OfflineAsrService {
     await _ensureWorker(paths);
   }
 
+  static Future<void> release() async {
+    final future = _workerFuture;
+    if (future == null) return;
+
+    // Clear this first so a later recording can create a fresh worker even if
+    // the old isolate is still finishing its current transcription.
+    _workerFuture = null;
+    try {
+      final worker = await future;
+      worker.send(const <String, String>{'command': 'shutdown'});
+    } catch (_) {
+      // A worker that failed during startup has no native resources to free.
+    }
+  }
+
   static Future<String> transcribe(String audioPath) async {
     if (kIsWeb || !Platform.isAndroid) {
       throw UnsupportedError('离线语音识别当前仅支持 Android。');
@@ -285,6 +300,11 @@ void _offlineAsrWorkerMain(Map<String, Object> bootstrap) {
 
     requests.listen((dynamic message) {
       if (message is! Map) return;
+      if (message['command'] == 'shutdown') {
+        recognizer.free();
+        requests.close();
+        Isolate.exit();
+      }
       final replyPort = message['replyPort'];
       final audioPath = (message['audioPath'] ?? '').toString();
       if (replyPort is! SendPort) return;

@@ -158,7 +158,7 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
                       ),
                       _Section(
                         title: '聊天模型',
-                        subtitle: '用于联网聊天回答。聊天密钥不会用于语音合成。',
+                        subtitle: '用于联网大模型聊天回答。',
                         children: [
                           _Field(
                             controller: _qwenBaseUrlController,
@@ -182,7 +182,8 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
                       const SizedBox(height: 12),
                       _Section(
                         title: '腾讯云文字朗读',
-                        subtitle: '设备系统朗读不可用时启用；不再提供其他 TTS 服务商切换。',
+                        subtitle:
+                            'SecretId 和 SecretKey 均已配置时优先使用；未配置或调用失败时使用系统 TTS。',
                         children: [
                           _Field(
                             controller: _tencentAppIdController,
@@ -207,7 +208,7 @@ class _ModelConfigPageState extends State<ModelConfigPage> {
                           _Field(
                             controller: _tencentVoiceTypeController,
                             label: '音色 VoiceType',
-                            hint: '1001',
+                            hint: '1002',
                             keyboardType: TextInputType.number,
                           ),
                         ],

@@ -1,41 +1,39 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:http/http.dart' as http;
-import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'cartoon_classifier_service.dart';
 import 'model_config_service.dart';
 import 'offline_asr_service.dart';
+import 'pp_ocr_v5_service.dart';
 
 class ApiService {
   static const double _minCartoonConfidence = 0.70;
   static const String _notice = '本结果仅识别民族服饰卡通图片，不代表对真人民族身份的判断。';
 
   static Map<String, Map<String, dynamic>>? _cultureInfoCache;
-  static List<Map<String, dynamic>>? _costumeReferenceCache;
 
   static Future<void> prewarmLocalCostumeMatcher() =>
       CartoonClassifierService.instance.load();
 
   static Future<void> prewarmOfflineAsr() => OfflineAsrService.prewarm();
 
-  static String resolveUrl(String pathOrUrl) {
-    return pathOrUrl;
-  }
+  static Future<void> releaseOfflineAsr() => OfflineAsrService.release();
 
   static Future<Map<String, dynamic>> recognizeImage(XFile imageFile) async {
-    final cultureInfo = await _cultureInfo();
+    final cultureInfoFuture = _cultureInfo();
     final bytes = await imageFile.readAsBytes();
-    final ocrMatch = await _tryOcrTitleMatch(imageFile, cultureInfo);
-
-    final predictions = await CartoonClassifierService.instance.classify(bytes);
+    // OCR and classification are independent. Running both native operations
+    // concurrently removes OCR from the critical path without changing which
+    // model decides the result.
+    final ocrTextFuture = _tryReadOcrText(imageFile);
+    final predictionsFuture = CartoonClassifierService.instance.classify(bytes);
+    final cultureInfo = await cultureInfoFuture;
+    final predictions = await predictionsFuture;
+    final ocrText = await ocrTextFuture;
     final recognized = predictions
         .where((item) => cultureInfo.containsKey(item.label))
         .toList(growable: false);
@@ -46,7 +44,7 @@ class ApiService {
         results: const [],
         warning: '本地服饰模型最高置信度低于70%，暂不展示结果。请保持服饰人物主体清晰、完整并减少反光。',
         predictions: predictions,
-        ocrText: ocrMatch?.text,
+        ocrText: ocrText,
       );
     }
 
@@ -59,7 +57,7 @@ class ApiService {
         ),
       ],
       predictions: predictions,
-      ocrText: ocrMatch?.text,
+      ocrText: ocrText,
     );
   }
 
@@ -146,25 +144,11 @@ $question
     return normalized;
   }
 
-  static Future<List<Map<String, dynamic>>> _costumeReference() async {
-    final cached = _costumeReferenceCache;
-    if (cached != null) return cached;
-
-    final raw = await rootBundle.loadString('assets/costume_reference.json');
-    final decoded = jsonDecode(raw) as List<dynamic>;
-    final refs = decoded
-        .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList(growable: false);
-    _costumeReferenceCache = refs;
-    return refs;
-  }
-
   static Map<String, dynamic> _formatResult({
     required List<Map<String, dynamic>> results,
     required List<CartoonPrediction> predictions,
     String warning = '',
-    String engine = 'local_cartoon_tflite',
+    String engine = 'local_cartoon_executorch',
     String? ocrText,
   }) {
     final payload = <String, dynamic>{
@@ -189,179 +173,8 @@ $question
     return payload;
   }
 
-  static Future<_OcrMatch?> _tryOcrTitleMatch(
-    XFile imageFile,
-    Map<String, Map<String, dynamic>> cultureInfo,
-  ) async {
-    if (kIsWeb) return null;
-
-    TextRecognizer? recognizer;
-    try {
-      recognizer = TextRecognizer(script: TextRecognitionScript.chinese);
-      final recognized = await recognizer.processImage(
-        InputImage.fromFilePath(imageFile.path),
-      );
-      final fullText = recognized.text.trim();
-      var label = await _matchLabelFromOcrText(fullText, cultureInfo);
-      var combinedText = fullText;
-
-      if (label == null) {
-        final croppedText = await _recognizeBottomTitle(
-          recognizer,
-          imageFile,
-        );
-        if (croppedText.isNotEmpty) {
-          combinedText = [fullText, croppedText]
-              .where((value) => value.isNotEmpty)
-              .toSet()
-              .join('\n');
-          label = await _matchLabelFromOcrText(croppedText, cultureInfo);
-        }
-      }
-      if (combinedText.isEmpty) return null;
-
-      return _OcrMatch(
-        label: label != null && cultureInfo.containsKey(label) ? label : null,
-        confidence: label == null ? 0.0 : 0.99,
-        text: combinedText,
-      );
-    } catch (_) {
-      return null;
-    } finally {
-      await recognizer?.close();
-    }
-  }
-
-  static Future<String> _recognizeBottomTitle(
-    TextRecognizer recognizer,
-    XFile imageFile,
-  ) async {
-    File? tempFile;
-    try {
-      final decoded = img.decodeImage(await imageFile.readAsBytes());
-      if (decoded == null || decoded.height < 80) return '';
-      final oriented = img.bakeOrientation(decoded);
-      final cropTop = (oriented.height * 0.58).round();
-      var titleCrop = img.copyCrop(
-        oriented,
-        x: 0,
-        y: cropTop,
-        width: oriented.width,
-        height: oriented.height - cropTop,
-      );
-      if (titleCrop.width < 1200) {
-        titleCrop = img.copyResize(
-          titleCrop,
-          width: 1200,
-          interpolation: img.Interpolation.cubic,
-        );
-      }
-      // Totem titles are often white characters on black. Inverting the crop
-      // gives ML Kit the conventional dark-text-on-light-background layout.
-      titleCrop = img.invert(img.grayscale(titleCrop));
-
-      final tempDir = await getTemporaryDirectory();
-      tempFile = File(
-        p.join(
-          tempDir.path,
-          'culture_ocr_${DateTime.now().microsecondsSinceEpoch}.png',
-        ),
-      );
-      await tempFile.writeAsBytes(img.encodePng(titleCrop), flush: true);
-      final recognized = await recognizer.processImage(
-        InputImage.fromFilePath(tempFile.path),
-      );
-      return recognized.text.trim();
-    } catch (_) {
-      return '';
-    } finally {
-      try {
-        if (tempFile != null && await tempFile.exists()) {
-          await tempFile.delete();
-        }
-      } catch (_) {}
-    }
-  }
-
-  static Future<String?> _matchLabelFromOcrText(
-    String text,
-    Map<String, Map<String, dynamic>> cultureInfo,
-  ) async {
-    final normalizedText = _normalizeOcrText(text);
-    if (normalizedText.isEmpty) return null;
-
-    for (final entry in cultureInfo.entries) {
-      final info = entry.value;
-      final group = (info['group'] ?? '').toString();
-      final name = (info['name'] ?? '').toString();
-      for (final alias in <String>[group, name]) {
-        final normalizedAlias = _normalizeOcrText(alias);
-        if (normalizedAlias.length >= 2 &&
-            normalizedText.contains(normalizedAlias)) {
-          return entry.key;
-        }
-      }
-    }
-
-    const commonCorrections = <String, String>{
-      '仫老族': 'mulaozu',
-      '么佬族': 'mulaozu',
-      '仫佬旋': 'mulaozu',
-      '仫佬旅': 'mulaozu',
-      '仫佬旗': 'mulaozu',
-    };
-    for (final correction in commonCorrections.entries) {
-      if (normalizedText.contains(_normalizeOcrText(correction.key)) &&
-          cultureInfo.containsKey(correction.value)) {
-        return correction.value;
-      }
-    }
-
-    // Decorative fonts often cause one wrong character. Allow one substituted
-    // character only for ethnic names of at least three characters.
-    for (final entry in cultureInfo.entries) {
-      final group = _normalizeOcrText((entry.value['group'] ?? '').toString());
-      if (group.length >= 3 &&
-          _containsWithOneSubstitution(normalizedText, group)) {
-        return entry.key;
-      }
-    }
-
-    final refs = await _costumeReference();
-    for (final item in refs) {
-      final label = (item['label'] ?? '').toString();
-      if (!cultureInfo.containsKey(label)) continue;
-      final english = (item['english'] ?? '').toString();
-      final normalizedEnglish = _normalizeOcrText(english);
-      if (normalizedEnglish.length >= 3 &&
-          normalizedText.contains(normalizedEnglish)) {
-        return label;
-      }
-    }
-
-    return null;
-  }
-
-  static String _normalizeOcrText(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), '')
-        .replaceAll(RegExp(r'[^\u4e00-\u9fa5a-z0-9]'), '');
-  }
-
-  static bool _containsWithOneSubstitution(String text, String expected) {
-    if (text.length < expected.length) return false;
-    for (var start = 0; start <= text.length - expected.length; start += 1) {
-      var differences = 0;
-      for (var i = 0; i < expected.length; i += 1) {
-        if (text.codeUnitAt(start + i) != expected.codeUnitAt(i)) {
-          differences += 1;
-          if (differences > 1) break;
-        }
-      }
-      if (differences <= 1) return true;
-    }
-    return false;
+  static Future<String?> _tryReadOcrText(XFile imageFile) async {
+    return PpOcrV5Service.recognizeTitle(imageFile.path);
   }
 
   static Map<String, dynamic> _toResult(
@@ -521,16 +334,4 @@ $question
     if (value is List) return value.map((item) => item.toString()).toList();
     return const [];
   }
-}
-
-class _OcrMatch {
-  final String? label;
-  final double confidence;
-  final String text;
-
-  const _OcrMatch({
-    required this.label,
-    required this.confidence,
-    required this.text,
-  });
 }

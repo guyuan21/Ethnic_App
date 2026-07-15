@@ -1,11 +1,18 @@
 import 'model_config_service.dart';
 import 'tencent_tts_service.dart';
 
-/// Tencent Cloud TTS fallback used when the device system TTS cannot speak.
+/// Tencent Cloud TTS used as the preferred Android reader. The chat page
+/// falls back to the device system TTS when this service is unavailable.
 class OnlineTtsService {
   OnlineTtsService._();
 
   static final OnlineTtsService instance = OnlineTtsService._();
+
+  Future<bool> isConfigured() async {
+    final config = await ModelConfigService.load();
+    return config.tencentSecretId.trim().isNotEmpty &&
+        config.tencentSecretKey.trim().isNotEmpty;
+  }
 
   Future<void> speak(String text) async {
     final speechText = _normalizeSpeechText(text);

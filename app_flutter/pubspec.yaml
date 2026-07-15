@@ -1,6 +1,6 @@
 name: app_flutter
 description: Local cartoon ethnic culture recognition app
-version: 1.0.1+2
+version: 1.0.1+7
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -11,16 +11,29 @@ dependencies:
 
   cupertino_icons: ^1.0.6
   flutter_tts: ^4.0.2
-  google_mlkit_text_recognition: ^0.16.0
   http: ^1.2.2
   image_picker: ^1.1.2
   image: ^4.9.1
   path: ^1.9.1
   path_provider: ^2.1.5
   record: ^7.1.1
-  sherpa_onnx: ^1.13.4
+  # Keep this pinned: 1.13.3 bundles ONNX Runtime 1.24.3, the same ABI used
+  # by the Android PP-OCR runtime below. 1.13.4 moved to ORT 1.27.0.
+  sherpa_onnx: 1.13.3
   shared_preferences: ^2.3.3
-  tflite_flutter: ^0.12.1
+
+# sherpa_onnx uses caret constraints for its platform packages. Pin every
+# implementation as well, otherwise pub may combine the 1.13.3 Dart API with
+# 1.13.4 native binaries (ONNX Runtime 1.27.0) and break PP-OCR at startup.
+dependency_overrides:
+  sherpa_onnx_android_arm64: 1.13.3
+  sherpa_onnx_android_armeabi: 1.13.3
+  sherpa_onnx_android_x86: 1.13.3
+  sherpa_onnx_android_x86_64: 1.13.3
+  sherpa_onnx_ios: 1.13.3
+  sherpa_onnx_linux: 1.13.3
+  sherpa_onnx_macos: 1.13.3
+  sherpa_onnx_windows: 1.13.3
 
 dev_dependencies:
   flutter_test:
@@ -32,8 +45,10 @@ flutter:
   assets:
     - assets/icon/app_icon.png
     - assets/culture_info.json
-    - assets/costume_reference.json
-    - assets/model/
+    - assets/model/labels.txt
+    - assets/model/resnest50_ethnic_int8_qat.pte
+    - assets/model/resnest50_ethnic_int8_qat.json
     - assets/asr/sensevoice/
+    - assets/ocr/ppocrv5/
     - assets/costumes/
     - assets/totems/

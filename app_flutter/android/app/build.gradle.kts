@@ -28,7 +28,7 @@ android {
     androidResources {
         // The model is copied with a native stream on first launch. Keeping it
         // uncompressed avoids a second large decompression buffer in the APK.
-        noCompress += listOf("onnx", "txt")
+        noCompress += listOf("onnx", "pte", "txt")
     }
 
     packaging {
@@ -61,6 +61,11 @@ flutter {
 }
 
 dependencies {
+    implementation("org.pytorch:executorch-android:1.3.1")
     implementation(files("libs/libqcloudtts-release.aar"))
-    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    // Must match the native ONNX Runtime bundled by sherpa_onnx 1.13.3.
+    // Mismatched versioned symbols make the release APK crash during startup.
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.3")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
+    testImplementation("junit:junit:4.13.2")
 }

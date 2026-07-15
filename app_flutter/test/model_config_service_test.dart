@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_flutter/pages/model_config_page.dart';
 import 'package:app_flutter/services/model_config_service.dart';
+import 'package:app_flutter/services/online_tts_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,41 @@ void main() {
     expect(config.tencentSecretKey, 'test-secret-key');
     expect(config.tencentToken, 'test-token');
     expect(config.tencentVoiceType, '1001');
+  });
+
+  test('Tencent TTS is selected only when ID and KEY are both configured',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    expect(await OnlineTtsService.instance.isConfigured(), isFalse);
+
+    final defaults = ModelRuntimeConfig.packagedDefaults();
+    await ModelConfigService.save(
+      ModelRuntimeConfig(
+        qwenBaseUrl: defaults.qwenBaseUrl,
+        qwenApiKey: '',
+        qwenChatModel: defaults.qwenChatModel,
+        tencentAppId: '',
+        tencentSecretId: 'configured-id',
+        tencentSecretKey: '',
+        tencentToken: '',
+        tencentVoiceType: '1001',
+      ),
+    );
+    expect(await OnlineTtsService.instance.isConfigured(), isFalse);
+
+    await ModelConfigService.save(
+      ModelRuntimeConfig(
+        qwenBaseUrl: defaults.qwenBaseUrl,
+        qwenApiKey: '',
+        qwenChatModel: defaults.qwenChatModel,
+        tencentAppId: '',
+        tencentSecretId: 'configured-id',
+        tencentSecretKey: 'configured-key',
+        tencentToken: '',
+        tencentVoiceType: '1001',
+      ),
+    );
+    expect(await OnlineTtsService.instance.isConfigured(), isTrue);
   });
 
   testWidgets('configuration page only shows Tencent TTS settings', (

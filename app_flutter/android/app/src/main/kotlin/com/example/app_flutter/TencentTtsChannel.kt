@@ -33,9 +33,18 @@ class TencentTtsChannel(
     private var activeRequestPrefix: String? = null
     private var pendingResult: MethodChannel.Result? = null
     private var pendingTimeout: Runnable? = null
+    private var expectedChunkCount = 0
+    private val enqueuedUtteranceIds = mutableSetOf<String>()
+    private var playbackStarted = false
 
     private val player = QCloudMediaPlayer(object : QCloudPlayerCallback {
-        override fun onTTSPlayStart() = Unit
+        override fun onTTSPlayStart() {
+            // Only report success to Flutter after the device has actually
+            // started audio playback. Enqueue success alone is insufficient
+            // on Android panels whose audio service rejects playback later.
+            playbackStarted = true
+            tryCompleteSuccess()
+        }
         override fun onTTSPlayWait() = Unit
         override fun onTTSPlayResume() = Unit
         override fun onTTSPlayPause() = Unit
@@ -89,12 +98,15 @@ class TencentTtsChannel(
                         playerError.getmMessage() ?: "腾讯云语音播放失败。",
                     )
                 } else {
-                    completeSuccess()
+                    enqueuedUtteranceIds.add(id)
+                    tryCompleteSuccess()
                 }
             }
         }
 
         override fun onError(error: TtsError?, utteranceId: String?, text: String?) {
+            val prefix = activeRequestPrefix ?: return
+            if (!utteranceId.orEmpty().startsWith(prefix)) return
             val serviceError = error?.serviceError
             val message = when {
                 serviceError != null ->
@@ -178,6 +190,9 @@ class TencentTtsChannel(
             val prefix = "flutter_${System.currentTimeMillis()}_"
             activeRequestPrefix = prefix
             pendingResult = result
+            expectedChunkCount = texts.size
+            enqueuedUtteranceIds.clear()
+            playbackStarted = false
             val timeout = Runnable {
                 completeError("TENCENT_TTS_TIMEOUT", "腾讯云语音合成超时，请检查网络和凭证。")
             }
@@ -203,9 +218,13 @@ class TencentTtsChannel(
         }
     }
 
-    private fun completeSuccess() {
+    private fun tryCompleteSuccess() {
         mainHandler.post {
+            if (!playbackStarted || enqueuedUtteranceIds.size < expectedChunkCount) {
+                return@post
+            }
             val result = pendingResult ?: return@post
+            activeRequestPrefix = null
             clearPending()
             result.success(null)
         }
@@ -214,6 +233,7 @@ class TencentTtsChannel(
     private fun completeError(code: String, message: String) {
         mainHandler.post {
             val result = pendingResult ?: return@post
+            activeRequestPrefix = null
             clearPending()
             result.error(code, message, null)
         }
@@ -223,6 +243,9 @@ class TencentTtsChannel(
         pendingTimeout?.let(mainHandler::removeCallbacks)
         pendingTimeout = null
         pendingResult = null
+        expectedChunkCount = 0
+        enqueuedUtteranceIds.clear()
+        playbackStarted = false
     }
 
     private fun stopInternal() {

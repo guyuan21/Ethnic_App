@@ -26,13 +26,6 @@ class ChatMessage {
   ChatMessage({required this.role, required this.text});
 }
 
-class _RecordingTarget {
-  final String path;
-  final String formatName;
-
-  const _RecordingTarget({required this.path, required this.formatName});
-}
-
 class _ChatPageState extends State<ChatPage> {
   static const Map<String, dynamic> _emptyChatContext = {
     'results': <dynamic>[],
@@ -50,6 +43,8 @@ class _ChatPageState extends State<ChatPage> {
   static const Duration _amplitudePollInterval = Duration(milliseconds: 180);
   static const int _recordingSampleRate = 16000;
   static const int _recordingBitRate = 32000;
+  static const Duration _ttsConfigurationTimeout = Duration(seconds: 4);
+  static const Duration _ttsCommandTimeout = Duration(seconds: 3);
 
   final TextEditingController _controller = TextEditingController();
   final FlutterTts _tts = FlutterTts();
@@ -72,16 +67,14 @@ class _ChatPageState extends State<ChatPage> {
   bool _autoReadEnabled = true;
   bool _hasHeardVoice = false;
   String? _activeRecordingPath;
-  String _activeRecordingFormat = '';
   DateTime? _recordingStartedAt;
   DateTime? _lastVoiceAt;
   double _noiseFloorDb = -65.0;
   double _adaptiveVoiceThresholdDb = -52.0;
   int _noiseCalibrationSamples = 0;
   int _consecutiveVoiceFrames = 0;
-  String? _lastSpeechText;
-  bool _onlineTtsFallbackActive = false;
   Completer<void>? _ttsStartCompleter;
+  int _speechAttemptId = 0;
 
   bool get _hasRecognizedContext {
     final results = widget.initialContext?['results'];
@@ -111,13 +104,6 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    unawaited(
-      ApiService.prewarmOfflineAsr().catchError((Object _) {
-        // The first real transcription retries and displays a useful error.
-        // Loading only after entering chat avoids reserving hundreds of MB
-        // while the user is using image recognition on low-memory devices.
-      }),
-    );
     _tts.setStartHandler(() {
       final completer = _ttsStartCompleter;
       if (completer != null && !completer.isCompleted) completer.complete();
@@ -127,7 +113,6 @@ class _ChatPageState extends State<ChatPage> {
       });
     });
     _tts.setCompletionHandler(() {
-      _lastSpeechText = null;
       if (!mounted) return;
       setState(() {
         _speechStatus = '朗读完成，可继续录音或文字追问';
@@ -137,18 +122,15 @@ class _ChatPageState extends State<ChatPage> {
       final startCompleter = _ttsStartCompleter;
       if (startCompleter != null && !startCompleter.isCompleted) {
         startCompleter.completeError(Exception(message));
-        return;
       }
       _ttsReady = false;
-      final fallbackText = _lastSpeechText;
-      if (fallbackText != null &&
-          fallbackText.isNotEmpty &&
-          _autoReadEnabled &&
-          !_onlineTtsFallbackActive) {
-        unawaited(_speakOnline(fallbackText));
+      if (mounted && _autoReadEnabled) {
+        setState(() {
+          _speechStatus = '系统 TTS 朗读失败：$message';
+        });
       }
     });
-    _configureTts();
+    unawaited(_configureTts());
     _messages.add(
       ChatMessage(
         role: 'assistant',
@@ -161,57 +143,56 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _configureTts() async {
     try {
-      await _tts.awaitSpeakCompletion(false);
-      await _tts.setVolume(1.0);
-      await _tts.setSpeechRate(0.45);
-      await _tts.setPitch(1.0);
+      await (() async {
+        await _tts.awaitSpeakCompletion(false);
+        await _tts.setVolume(1.0);
+        await _tts.setSpeechRate(0.45);
+        await _tts.setPitch(1.0);
 
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        try {
-          final engines = await _tts.getEngines;
-          if (engines is List) {
-            if (engines.isNotEmpty) {
-              final engineNames = engines.map((engine) => engine.toString());
-              final preferred = engineNames.firstWhere(
-                (engine) {
-                  final lower = engine.toLowerCase();
-                  return lower.contains('google') ||
-                      lower.contains('iflytek') ||
-                      lower.contains('huawei') ||
-                      lower.contains('samsung') ||
-                      lower.contains('baidu');
-                },
-                orElse: () => engineNames.first,
-              );
-              await _tts.setEngine(preferred);
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          try {
+            final engines = await _tts.getEngines;
+            if (engines is List) {
+              if (engines.isNotEmpty) {
+                final engineNames = engines.map((engine) => engine.toString());
+                final preferred = engineNames.firstWhere(
+                  (engine) {
+                    final lower = engine.toLowerCase();
+                    return lower.contains('google') ||
+                        lower.contains('iflytek') ||
+                        lower.contains('huawei') ||
+                        lower.contains('samsung') ||
+                        lower.contains('baidu');
+                  },
+                  orElse: () => engineNames.first,
+                );
+                await _tts.setEngine(preferred);
+              }
             }
+          } catch (_) {
+            // Some Android panels expose no selectable engine even when TTS works.
           }
-        } catch (_) {
-          // Some Android panels expose no selectable engine even when TTS works.
+
+          try {
+            await _tts.setQueueMode(0);
+          } catch (_) {
+            // Queue mode is Android-only and may be unavailable on some builds.
+          }
         }
 
-        try {
-          await _tts.setQueueMode(0);
-        } catch (_) {
-          // Queue mode is Android-only and may be unavailable on some builds.
+        final zhCnAvailable = await _tts.isLanguageAvailable('zh-CN');
+        if (zhCnAvailable == true || zhCnAvailable.toString() == 'true') {
+          await _tts.setLanguage('zh-CN');
+          _ttsLanguage = 'zh-CN';
+        } else {
+          await _tts.setLanguage('zh');
+          _ttsLanguage = 'zh';
         }
-      }
-
-      final zhCnAvailable = await _tts.isLanguageAvailable('zh-CN');
-      if (zhCnAvailable == true || zhCnAvailable.toString() == 'true') {
-        await _tts.setLanguage('zh-CN');
-        _ttsLanguage = 'zh-CN';
-      } else {
-        await _tts.setLanguage('zh');
-        _ttsLanguage = 'zh';
-      }
+      }())
+          .timeout(_ttsConfigurationTimeout);
       _ttsReady = true;
-    } catch (e) {
+    } catch (_) {
       _ttsReady = false;
-      if (!mounted) return;
-      setState(() {
-        _speechStatus = '当前设备没有可用中文朗读引擎，请在系统设置中安装或启用文字转语音引擎。';
-      });
     }
   }
 
@@ -227,69 +208,114 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _speak(String text) async {
-    _lastSpeechText = text;
-    var systemTtsSpoke = false;
+    final speechText = text.trim();
+    if (speechText.isEmpty || !_autoReadEnabled) return;
+    final attemptId = ++_speechAttemptId;
+    _setSpeechStatusForAttempt(attemptId, '回答已生成，正在准备朗读');
+
+    Object? onlineError;
+    var useTencentTts = false;
     try {
-      if (!_ttsReady) {
-        await _configureTts();
-      }
-      if (_ttsReady) {
-        await OnlineTtsService.instance.stop();
-        await _tts.stop();
-        try {
-          await _tts.setLanguage(_ttsLanguage);
-        } catch (_) {
-          await _tts.setLanguage('zh');
-        }
-        await _tts.setVolume(1.0);
-        await _tts.setSpeechRate(0.45);
-        await _tts.setPitch(1.0);
-        _ttsStartCompleter = Completer<void>();
-        final result = await _tts.speak(text);
-        if (result == 0 || result.toString() == '0') {
-          throw Exception('系统 TTS 拒绝了朗读请求');
-        }
-        await _ttsStartCompleter!.future.timeout(
-          const Duration(milliseconds: 2500),
-        );
-        _ttsStartCompleter = null;
-        systemTtsSpoke = true;
-        if (!mounted) return;
-        setState(() {
-          _speechStatus = '正在使用系统 TTS 朗读回答';
-        });
-      }
+      useTencentTts = await OnlineTtsService.instance.isConfigured();
     } catch (_) {
+      // Reading configuration failed; system TTS remains available.
+    }
+    if (!_isSpeechAttemptActive(attemptId)) return;
+
+    if (useTencentTts) {
+      // Do not await a possibly broken system TTS service on Android panels.
+      // Tencent Cloud uses a separate native audio channel and can start now.
+      unawaited(_stopSystemTtsSilently());
+      _setSpeechStatusForAttempt(attemptId, '正在连接大模型 TTS');
+      try {
+        await OnlineTtsService.instance.speak(speechText);
+        _setSpeechStatusForAttempt(attemptId, '正在使用大模型 TTS 朗读回答');
+        return;
+      } catch (error) {
+        if (!_isSpeechAttemptActive(attemptId)) return;
+        onlineError = error;
+        _setSpeechStatusForAttempt(
+          attemptId,
+          '大模型 TTS 不可用，正在尝试系统 TTS',
+        );
+      }
+    } else {
+      _setSpeechStatusForAttempt(attemptId, '未配置大模型 TTS，正在使用系统 TTS');
+    }
+
+    if (!_isSpeechAttemptActive(attemptId)) return;
+    try {
+      await _speakWithSystemTts(speechText, attemptId);
+    } catch (systemError) {
       _ttsStartCompleter = null;
       _ttsReady = false;
+      _setSpeechStatusForAttempt(
+        attemptId,
+        useTencentTts
+            ? '朗读失败：大模型 ${_shortTtsError(onlineError)}；系统 TTS ${_shortTtsError(systemError)}'
+            : '系统 TTS 不可用：${_shortTtsError(systemError)}',
+      );
     }
-
-    if (systemTtsSpoke) return;
-    await _speakOnline(text);
   }
 
-  Future<void> _speakOnline(String text) async {
-    if (_onlineTtsFallbackActive) return;
-    _onlineTtsFallbackActive = true;
+  Future<void> _stopSystemTtsSilently() async {
     try {
-      await _tts.stop();
-      if (!mounted) return;
-      setState(() {
-        _speechStatus = '系统 TTS 不可用，正在连接大模型 TTS';
-      });
-      await OnlineTtsService.instance.speak(text);
-      if (!mounted) return;
-      setState(() {
-        _speechStatus = '正在使用大模型 TTS 朗读回答';
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _speechStatus = '系统与大模型 TTS 均不可用：$error';
-      });
-    } finally {
-      _onlineTtsFallbackActive = false;
+      await _tts.stop().timeout(_ttsCommandTimeout);
+    } catch (_) {
+      // Some TV/tablet ROMs never answer the system TTS stop command.
     }
+  }
+
+  Future<void> _stopOnlineTtsSilently() async {
+    try {
+      await OnlineTtsService.instance.stop().timeout(_ttsCommandTimeout);
+    } catch (_) {
+      // Stopping speech must never block recording or the next question.
+    }
+  }
+
+  Future<void> _speakWithSystemTts(String text, int attemptId) async {
+    if (!_ttsReady) await _configureTts();
+    if (!_ttsReady) throw Exception('初始化超时或没有可用中文引擎');
+
+    await _tts.stop().timeout(_ttsCommandTimeout);
+    try {
+      await _tts.setLanguage(_ttsLanguage).timeout(_ttsCommandTimeout);
+    } catch (_) {
+      await _tts.setLanguage('zh').timeout(_ttsCommandTimeout);
+    }
+    await _tts.setVolume(1.0).timeout(_ttsCommandTimeout);
+    await _tts.setSpeechRate(0.45).timeout(_ttsCommandTimeout);
+    await _tts.setPitch(1.0).timeout(_ttsCommandTimeout);
+    _ttsStartCompleter = Completer<void>();
+    final result = await _tts.speak(text).timeout(_ttsCommandTimeout);
+    if (result == 0 || result.toString() == '0') {
+      throw Exception('拒绝了朗读请求');
+    }
+    await _ttsStartCompleter!.future.timeout(_ttsCommandTimeout);
+    _ttsStartCompleter = null;
+    _setSpeechStatusForAttempt(attemptId, '正在使用系统 TTS 朗读回答');
+  }
+
+  void _setSpeechStatusForAttempt(int attemptId, String status) {
+    if (!_isSpeechAttemptActive(attemptId)) return;
+    setState(() {
+      _speechStatus = status;
+    });
+  }
+
+  bool _isSpeechAttemptActive(int attemptId) {
+    return mounted && attemptId == _speechAttemptId && _autoReadEnabled;
+  }
+
+  String _shortTtsError(Object? error) {
+    final message = (error ?? '未知错误')
+        .toString()
+        .replaceFirst('Exception: ', '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (message.length <= 72) return message;
+    return '${message.substring(0, 72)}…';
   }
 
   Future<void> _sendQuestion(String question, {bool fromVoice = false}) async {
@@ -300,6 +326,10 @@ class _ChatPageState extends State<ChatPage> {
         (_transcribing && !fromVoice)) {
       return;
     }
+
+    _speechAttemptId++;
+    unawaited(_stopSystemTtsSilently());
+    unawaited(_stopOnlineTtsSilently());
 
     final pendingIndex = _messages.length + 1;
     setState(() {
@@ -325,7 +355,8 @@ class _ChatPageState extends State<ChatPage> {
         } else {
           _messages.add(ChatMessage(role: 'assistant', text: answer));
         }
-        _speechStatus = '回答已生成，可继续录音或文字追问';
+        _speechStatus =
+            _autoReadEnabled ? '回答已生成，正在准备朗读' : '回答已生成；自动朗读已关闭，可点击右上角扬声器开启';
       });
       _scrollToBottom();
       if (_autoReadEnabled) {
@@ -336,7 +367,7 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _speechStatus = '回答失败，请检查网络后重试';
         final errorText =
-            '暂时无法回答：$e\n\n请检查网络、聊天接口密钥和聊天模型。语音识别使用本地离线模型；图片识别使用本地TFLite，OCR仅辅助读取文字。';
+            '暂时无法回答：$e\n\n请检查网络、聊天接口密钥和聊天模型。语音识别使用本地离线模型；图片识别使用本地 ExecuTorch 模型，OCR仅辅助读取文字。';
         if (pendingIndex < _messages.length) {
           _messages[pendingIndex] =
               ChatMessage(role: 'assistant', text: errorText);
@@ -360,9 +391,11 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     try {
-      await _tts.stop();
-      _lastSpeechText = null;
-      await OnlineTtsService.instance.stop();
+      _speechAttemptId++;
+      await Future.wait<void>([
+        _stopSystemTtsSilently(),
+        _stopOnlineTtsSilently(),
+      ]);
       _recordingTimer?.cancel();
       _silenceWatchdog?.cancel();
       await _amplitudeSubscription?.cancel();
@@ -371,7 +404,6 @@ class _ChatPageState extends State<ChatPage> {
       _stoppingRecording = false;
       _hasHeardVoice = false;
       _activeRecordingPath = null;
-      _activeRecordingFormat = '';
       _recordingStartedAt = null;
       _lastVoiceAt = null;
       _resetVadState();
@@ -385,10 +417,15 @@ class _ChatPageState extends State<ChatPage> {
         return;
       }
 
+      // SenseVoice is over 200 MiB. Start loading only when voice input is
+      // actually used, and overlap the load with the user's recording.
+      unawaited(ApiService.prewarmOfflineAsr().catchError((Object _) {
+        // Submission awaits the same worker future and surfaces a useful
+        // error if initialization genuinely fails.
+      }));
+
       final tempDir = await getTemporaryDirectory();
-      final recordingTarget = await _startRecorder(tempDir.path);
-      _activeRecordingPath = recordingTarget.path;
-      _activeRecordingFormat = recordingTarget.formatName;
+      _activeRecordingPath = await _startRecorder(tempDir.path);
       _recordingStartedAt = DateTime.now();
 
       if (!mounted) return;
@@ -398,12 +435,6 @@ class _ChatPageState extends State<ChatPage> {
         _controller.clear();
         _speechStatus = '正在录音，说完停顿一下会自动识别';
       });
-
-      if (mounted) {
-        setState(() {
-          _speechStatus = '正在录音，说完停顿一下会自动识别';
-        });
-      }
 
       _startSilenceAutoStopWatch();
 
@@ -416,6 +447,8 @@ class _ChatPageState extends State<ChatPage> {
       try {
         await _audioRecorder.cancel();
       } catch (_) {}
+      await _deleteRecordingFiles({_activeRecordingPath});
+      _activeRecordingPath = null;
       if (!mounted) return;
       setState(() {
         _recording = false;
@@ -452,7 +485,7 @@ class _ChatPageState extends State<ChatPage> {
     await _submitRecordedVoice(auto: auto, stoppedBySilence: silence);
   }
 
-  Future<_RecordingTarget> _startRecorder(String tempDirPath) async {
+  Future<String> _startRecorder(String tempDirPath) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     if (!await _audioRecorder.isEncoderSupported(AudioEncoder.wav)) {
@@ -471,7 +504,7 @@ class _ChatPageState extends State<ChatPage> {
       ),
       path: path,
     );
-    return _RecordingTarget(path: path, formatName: 'WAV');
+    return path;
   }
 
   void _startSilenceAutoStopWatch() {
@@ -575,22 +608,15 @@ class _ChatPageState extends State<ChatPage> {
       });
     }
 
-    if (mounted) {
-      setState(() {
-        _speechStatus = stoppedBySilence ? '检测到停顿，正在上传识别语音' : '正在结束录音并上传识别';
-      });
-    }
-
+    String? recordedPath = _activeRecordingPath;
     try {
-      String? path;
       try {
         if (await _audioRecorder.isRecording()) {
-          path = await _audioRecorder.stop();
+          recordedPath = await _audioRecorder.stop() ?? recordedPath;
         }
       } catch (_) {}
-      path ??= _activeRecordingPath;
 
-      if (path == null || !await File(path).exists()) {
+      if (recordedPath == null || !await File(recordedPath).exists()) {
         throw Exception('没有生成可识别的录音文件，请再试一次。');
       }
 
@@ -605,12 +631,12 @@ class _ChatPageState extends State<ChatPage> {
         return;
       }
 
-      final fileLength = await File(path).length();
+      final fileLength = await File(recordedPath).length();
       if (fileLength < 512) {
         throw Exception('录音太短，请靠近麦克风再说一次。');
       }
 
-      final words = (await ApiService.transcribeAudio(path)).trim();
+      final words = (await ApiService.transcribeAudio(recordedPath)).trim();
       if (!mounted) return;
 
       if (words.isEmpty || _isLikelyAccidentalSpeech(words)) {
@@ -633,8 +659,8 @@ class _ChatPageState extends State<ChatPage> {
         _speechStatus = '录音识别失败：$e';
       });
     } finally {
+      await _deleteRecordingFiles({recordedPath, _activeRecordingPath});
       _activeRecordingPath = null;
-      _activeRecordingFormat = '';
       _recordingStartedAt = null;
       _lastVoiceAt = null;
       _hasHeardVoice = false;
@@ -652,6 +678,17 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Future<void> _deleteRecordingFiles(Set<String?> paths) async {
+    for (final path in paths.whereType<String>()) {
+      try {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      } catch (_) {
+        // Temporary-file cleanup must not replace the useful ASR result/error.
+      }
+    }
+  }
+
   Duration _currentRecordingDuration() {
     final startedAt = _recordingStartedAt;
     if (startedAt == null) return Duration.zero;
@@ -659,14 +696,14 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _setAutoReadEnabled(bool enabled) {
+    _speechAttemptId++;
     setState(() {
       _autoReadEnabled = enabled;
       _speechStatus = enabled ? '自动朗读已开启' : '自动朗读已关闭';
     });
     if (!enabled) {
-      _lastSpeechText = null;
-      _tts.stop();
-      unawaited(OnlineTtsService.instance.stop());
+      unawaited(_stopSystemTtsSilently());
+      unawaited(_stopOnlineTtsSilently());
     }
   }
 
@@ -776,6 +813,9 @@ class _ChatPageState extends State<ChatPage> {
     if (_recording) return Icons.mic;
     if (_transcribing) return Icons.graphic_eq;
     if (_loading) return Icons.hourglass_top;
+    if (_speechStatus.contains('朗读') || _speechStatus.contains('TTS')) {
+      return Icons.volume_up_outlined;
+    }
     if (_speechStatus.contains('失败') || _speechStatus.contains('权限')) {
       return Icons.info_outline;
     }
@@ -815,8 +855,9 @@ class _ChatPageState extends State<ChatPage> {
     _amplitudeSubscription?.cancel();
     _controller.dispose();
     _scrollController.dispose();
-    _tts.stop();
-    unawaited(OnlineTtsService.instance.stop());
+    unawaited(_stopSystemTtsSilently());
+    unawaited(_stopOnlineTtsSilently());
+    unawaited(ApiService.releaseOfflineAsr());
     unawaited(_audioRecorder.dispose());
     super.dispose();
   }

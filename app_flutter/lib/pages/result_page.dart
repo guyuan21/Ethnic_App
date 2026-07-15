@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../services/api_service.dart';
 import '../widgets/result_card.dart';
 import 'chat_page.dart';
 
@@ -33,7 +32,7 @@ class _ResultPageState extends State<ResultPage> {
   }
 
   String _engineText(String engine) {
-    if (engine == 'local_cartoon_tflite') {
+    if (engine == 'local_cartoon_executorch') {
       return '本地卡通模型识别';
     }
     return '图像识别模型匹配';
@@ -142,9 +141,7 @@ class _ResultPageState extends State<ResultPage> {
                   elementName: (bestResult['element_name'] ?? '').toString(),
                   totemAsset:
                       bestLabel.isEmpty ? '' : 'assets/totems/$bestLabel.png',
-                  totemUrl: ApiService.resolveUrl(
-                    (bestResult['totem_url'] ?? '').toString(),
-                  ),
+                  totemUrl: (bestResult['totem_url'] ?? '').toString(),
                   confidence:
                       (bestResult['confidence'] as num? ?? 0).toDouble(),
                   intro: (bestResult['intro'] ?? '').toString(),

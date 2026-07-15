@@ -15,10 +15,20 @@ class MainActivity : FlutterActivity() {
     private val modelExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var tencentTtsChannel: TencentTtsChannel? = null
+    private var execuTorchClassifierChannel: ExecuTorchClassifierChannel? = null
+    private var ppOcrV5Channel: PpOcrV5Channel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         tencentTtsChannel = TencentTtsChannel(
+            applicationContext,
+            flutterEngine.dartExecutor.binaryMessenger,
+        )
+        execuTorchClassifierChannel = ExecuTorchClassifierChannel(
+            applicationContext,
+            flutterEngine.dartExecutor.binaryMessenger,
+        )
+        ppOcrV5Channel = PpOcrV5Channel(
             applicationContext,
             flutterEngine.dartExecutor.binaryMessenger,
         )
@@ -114,6 +124,10 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         tencentTtsChannel?.dispose()
         tencentTtsChannel = null
+        execuTorchClassifierChannel?.dispose()
+        execuTorchClassifierChannel = null
+        ppOcrV5Channel?.dispose()
+        ppOcrV5Channel = null
         modelExecutor.shutdownNow()
         super.onDestroy()
     }
